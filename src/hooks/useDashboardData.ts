@@ -1,441 +1,522 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ManagerKPI {
-    totalStudents: number;
-    totalTeachers: number;
-    totalClasses: number;
-    attendanceRate: number;
-    approvalRate: number;
-    revenueMonth: number;
-    revenueDefault: number;
-    absenteeismRate: number;
+  totalStudents: number;
+  totalTeachers: number;
+  totalClasses: number;
+  attendanceRate: number;
+  approvalRate: number;
+  revenueMonth: number;
+  revenueDefault: number;
+  absenteeismRate: number;
 }
 
-// 1. Perfil e Usuarios
+// =============================================================
+// 1. PERFIL E USUÁRIOS
+// =============================================================
 
-// 2. Dashboard do Gestor (Real Data)
-export const useManagerData = () => {
-    return useQuery<ManagerKPI>({
-        queryKey: ["manager-data"],
-        queryFn: async () => {
-            const [
-                { count: studentsCount },
-                { count: teachersCount },
-                { count: classesCount },
-                { data: attData },
-                { data: gradeData },
-                { data: finData },
-            ] = await Promise.all([
-                supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'aluno'),
-                supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'docente'),
-                supabase.from('classes').select('*', { count: 'exact', head: true }),
-                supabase.from('attendance').select('status'),
-                supabase.from('grades').select('grade_value'),
-                supabase.from('financial_records').select('amount, is_paid'),
-            ])
-
-            const attRate = attData && attData.length > 0
-                ? (attData.filter((a: any) => a.status === 'presente').length / attData.length) * 100
-                : 0
-
-            const appRate = gradeData && gradeData.length > 0
-                ? (gradeData.filter((g: any) => Number(g.grade_value) >= 7).length / gradeData.length) * 100
-                : 0
-
-            let revMonth = 0
-            let revDefault = 0
-            if (finData && finData.length > 0) {
-                revMonth = finData
-                    .filter((f: any) => f.is_paid)
-                    .reduce((acc: number, curr: any) => acc + Number(curr.amount), 0)
-                revDefault = (finData.filter((f: any) => !f.is_paid).length / finData.length) * 100
-            }
-
-            return {
-                totalStudents: studentsCount ?? 0,
-                totalTeachers: teachersCount ?? 0,
-                totalClasses: classesCount ?? 0,
-                attendanceRate: Math.round(attRate),
-                approvalRate: Math.round(appRate),
-                revenueMonth: revMonth,
-                revenueDefault: Number(revDefault.toFixed(1)),
-                absenteeismRate: Math.round(100 - attRate),
-            }
-        },
-
-    });
+export const useProfile = () => {
+  return useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
 };
 
+export const useAllStudents = () => {
+  return useQuery({
+    queryKey: ['all-students'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'aluno')
+        .order('full_name');
+      if (error) throw error;
+      return data;
+    },
+  });
+};
+
+export const useAllTeachers = () => {
+  return useQuery({
+    queryKey: ['all-teachers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'docente')
+        .order('full_name');
+      if (error) throw error;
+      return data;
+    },
+  });
+};
+
+// =============================================================
+// 2. DASHBOARD DO GESTOR — REAL DATA
+// =============================================================
+
+export const useManagerData = () => {
+  return useQuery<ManagerKPI>({
+    queryKey: ['manager-data'],
+    queryFn: async () => {
+      const [
+        { count: studentsCount },
+        { count: teachersCount },
+        { count: classesCount },
+        { data: attData },
+        { data: gradeData },
+        { data: finData },
+      ] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'aluno'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'docente'),
+        supabase.from('classes').select('*', { count: 'exact', head: true }),
+        supabase.from('attendance').select('status'),
+        supabase.from('grades').select('grade_value'),
+        supabase.from('financial_records').select('amount, is_paid'),
+      ]);
+
+      const attRate = attData && attData.length > 0
+        ? (attData.filter((a: any) => a.status === 'presente').length / attData.length) * 100
+        : 0;
+
+      const appRate = gradeData && gradeData.length > 0
+        ? (gradeData.filter((g: any) => Number(g.grade_value) >= 7).length / gradeData.length) * 100
+        : 0;
+
+      let revMonth = 0;
+      let revDefault = 0;
+
+      if (finData && finData.length > 0) {
+        revMonth = finData
+          .filter((f: any) => f.is_paid)
+          .reduce((acc: number, curr: any) => acc + Number(curr.amount), 0);
+        revDefault = (finData.filter((f: any) => !f.is_paid).length / finData.length) * 100;
+      }
+
+      return {
+        totalStudents: studentsCount ?? 0,
+        totalTeachers: teachersCount ?? 0,
+        totalClasses: classesCount ?? 0,
+        attendanceRate: Math.round(attRate),
+        approvalRate: Math.round(appRate),
+        revenueMonth: revMonth,
+        revenueDefault: Number(revDefault.toFixed(1)),
+        absenteeismRate: Math.round(100 - attRate),
+      };
+    },
+  });
+};
+
+// =============================================================
+// 3. GRÁFICOS DO GESTOR
+// =============================================================
+
 export const useRevenueData = () => {
-    return useQuery({
-        queryKey: ["revenue-chart"],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from("financial_records")
-                .select("amount, is_paid, due_date");
+  return useQuery({
+    queryKey: ['revenue-chart'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('financial_records')
+        .select('amount, is_paid, due_date');
+      if (error) return [];
 
-            if (error) return [];
+      const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      const grouped: Record<string, { receita: number; inadimplencia: number; sortKey: string }> = {};
 
-            const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+      data?.forEach((f: any) => {
+        const d = new Date(f.due_date);
+        const monthIdx = d.getMonth();
+        const year = d.getFullYear();
+        const key = `${year}-${String(monthIdx).padStart(2, '0')}`;
+        const label = `${monthNames[monthIdx]}/${year}`;
 
-            // Group by year-month dynamically
-            const grouped: Record<string, { receita: number; inadimplencia: number; sortKey: string }> = {};
-            (data || []).forEach(f => {
-                const d = new Date(f.due_date);
-                const monthIdx = d.getMonth();
-                const year = d.getFullYear();
-                const key = `${year}-${String(monthIdx).padStart(2, '0')}`;
-                const label = `${monthNames[monthIdx]}/${year}`;
-                if (!grouped[key]) {
-                    grouped[key] = { receita: 0, inadimplencia: 0, sortKey: key };
-                }
-                if (f.is_paid) {
-                    grouped[key].receita += Number(f.amount || 0);
-                } else {
-                    grouped[key].inadimplencia += Number(f.amount || 0);
-                }
-            });
+        if (!grouped[key]) grouped[key] = { receita: 0, inadimplencia: 0, sortKey: key };
 
-            return Object.entries(grouped)
-                .sort(([a], [b]) => a.localeCompare(b))
-                .map(([key, val]) => {
-                    const [year, month] = key.split('-');
-                    return {
-                        month: `${monthNames[Number(month)]}`,
-                        receita: val.receita,
-                        inadimplencia: val.inadimplencia
-                    };
-                });
+        if (f.is_paid) {
+          grouped[key].receita += Number(f.amount) || 0;
+        } else {
+          grouped[key].inadimplencia += Number(f.amount) || 0;
         }
-    });
+      });
+
+      return Object.entries(grouped)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, val]) => {
+          const [year, month] = key.split('-');
+          return {
+            month: monthNames[Number(month)],
+            receita: val.receita,
+            inadimplencia: val.inadimplencia,
+          };
+        });
+    },
+  });
 };
 
 export const useCoursePerformance = () => {
-    return useQuery({
-        queryKey: ["course-performance"],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from('grades')
-                .select('grade_value, av1, av2, av3, student_id, class_id, classes!inner(name)');
+  return useQuery({
+    queryKey: ['course-performance'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('grades')
+        .select('grade_value, av1, av2, av3, student_id, class_id, classes!inner(name)');
+      if (error) return [];
 
-            if (error) return [];
+      const groupedByClass: Record<string, { sum: number; count: number; students: Set<string> }> = {};
 
-            const groupedByClass: Record<string, { sum: number, count: number, students: Set<string> }> = {};
-
-            data?.forEach((g: any) => {
-                const className = g.classes?.name || 'Geral'
-                if (!groupedByClass[className]) {
-                    groupedByClass[className] = { sum: 0, count: 0, students: new Set<string>() }
-                }
-                // Use av1/av2/av3 if available, fall back to grade_value
-                const avgs = [g.av1, g.av2, g.av3].filter((v) => v !== null && v !== undefined)
-                const gradeVal =
-                    avgs.length > 0
-                        ? avgs.reduce((s: number, v: any) => s + Number(v), 0) / avgs.length
-                        : Number(g.grade_value) || 0
-
-                groupedByClass[className].sum += gradeVal
-                groupedByClass[className].count += 1
-                groupedByClass[className].students.add(g.student_id)
-            })
-
-            return Object.entries(groupedByClass).map(([name, data]) => ({
-                course: name,
-                avg: Number((data.sum / data.count).toFixed(1)),
-                students: data.students.size
-            }));
+      data?.forEach((g: any) => {
+        const className = g.classes?.name ?? 'Geral';
+        if (!groupedByClass[className]) {
+          groupedByClass[className] = { sum: 0, count: 0, students: new Set<string>() };
         }
-    });
+
+        const avgs = [g.av1, g.av2, g.av3].filter((v) => v !== null && v !== undefined);
+        const gradeVal = avgs.length > 0
+          ? avgs.reduce((s: number, v: any) => s + Number(v), 0) / avgs.length
+          : Number(g.grade_value) || 0;
+
+        groupedByClass[className].sum += gradeVal;
+        groupedByClass[className].count += 1;
+        groupedByClass[className].students.add(g.student_id);
+      });
+
+      return Object.entries(groupedByClass).map(([name, data]) => ({
+        course: name,
+        avg: Number((data.sum / data.count).toFixed(1)),
+        students: data.students.size,
+      }));
+    },
+  });
 };
 
-// 3. Turmas e Alunos (Professor)
+// =============================================================
+// 4. TURMAS E ALUNOS — PROFESSOR
+// =============================================================
+
 export const useTeacherClasses = (teacherId?: string) => {
-    return useQuery({
-        queryKey: ["teacher-classes", teacherId],
-        queryFn: async () => {
-            if (!teacherId) return [];
-            const { data, error } = await supabase
-                .from("classes")
-                .select("*")
-                .eq("teacher_id", teacherId);
-            if (error) throw error;
-            return data;
-        },
-        enabled: !!teacherId
-    });
+  return useQuery({
+    queryKey: ['teacher-classes', teacherId],
+    queryFn: async () => {
+      if (!teacherId) return [];
+      const { data, error } = await supabase
+        .from('classes')
+        .select('*')
+        .eq('teacher_id', teacherId);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!teacherId,
+  });
 };
 
 export const useClassStudents = (classId?: string) => {
-    return useQuery({
-        queryKey: ["class-students", classId],
-        queryFn: async () => {
-            if (!classId) return [];
+  return useQuery({
+    queryKey: ['class-students', classId],
+    queryFn: async () => {
+      if (!classId) return [];
 
-            const [
-                { data: enrolls, error: enrollError },
-                { data: grades, error: gradesError },
-                { data: attendance, error: attError },
-            ] = await Promise.all([
-                supabase
-                    .from('enrollments')
-                    .select('student_id, profiles(id, full_name, student_card_id)')
-                    .eq('class_id', classId),
-                supabase
-                    .from('grades')
-                    .select('id, student_id, class_id, grade_value, av1, av2, av3, feedback, updated_at')
-                    .eq('class_id', classId),
-                supabase
-                    .from('attendance')
-                    .select('*')
-                    .eq('class_id', classId),
-            ])
+      const [
+        { data: enrolls, error: enrollError },
+        { data: grades, error: gradesError },
+        { data: attendance, error: attError },
+      ] = await Promise.all([
+        supabase
+          .from('enrollments')
+          .select('student_id, profiles(id, full_name, student_card_id)')
+          .eq('class_id', classId),
+        supabase
+          .from('grades')
+          .select('id, student_id, class_id, grade_value, av1, av2, av3, feedback, updated_at')
+          .eq('class_id', classId),
+        supabase
+          .from('attendance')
+          .select('*')
+          .eq('class_id', classId),
+      ]);
 
-            if (enrollError) throw enrollError;
-            if (gradesError) throw gradesError;
-            if (attError) throw attError;
+      if (enrollError) throw enrollError;
+      if (gradesError) throw gradesError;
+      if (attError) throw attError;
 
+      return (enrolls ?? []).map((d: any) => {
+        const studentId = d.profiles.id;
+        const studentGrades = (grades as any[]).filter((g) => g.student_id === studentId);
+        const sg = studentGrades[0];
 
-            return enrolls.map((d: any) => {
-                const studentId = d.profiles.id;
-                const studentGrades = (grades as any[]).filter(g => g.student_id === studentId);
-                const sg = studentGrades[0];
-                const mainGrade = sg?.av1 != null ? Number(sg.av1) :
-                                  sg?.grade_value != null ? Number(sg.grade_value) : null;
-                const av2Val: number | null = sg?.av2 != null ? Number(sg.av2) : null;
-                const av3Val: number | null = sg?.av3 != null ? Number(sg.av3) : null;
+        const av1Val: number | null = sg?.av1 != null ? Number(sg.av1) : null;
+        const av2Val: number | null = sg?.av2 != null ? Number(sg.av2) : null;
+        const av3Val: number | null = sg?.av3 != null ? Number(sg.av3) : null;
 
-                const studentAtts = attendance.filter(a => a.student_id === studentId);
-                const presencePct = studentAtts.length > 0
-                    ? (studentAtts.filter(a => a.status === 'presente').length / studentAtts.length) * 100
-                    : 100;
+        const studentAtts = (attendance ?? []).filter((a: any) => a.student_id === studentId);
+        const presencePct = studentAtts.length > 0
+          ? (studentAtts.filter((a: any) => a.status === 'presente').length / studentAtts.length) * 100
+          : 100;
 
-                return {
-                    id: studentId,
-                    name: d.profiles.full_name,
-                    matricula: d.profiles.student_card_id || "S/M",
-                    av1: mainGrade,
-                    av2: av2Val,
-                    av3: av3Val,
-                    attendance: Math.round(presencePct)
-                };
-            });
-        },
-        enabled: !!classId
-    });
+        return {
+          id: studentId,
+          name: d.profiles.full_name ?? '',
+          matricula: d.profiles.student_card_id ?? 'S/M',
+          av1: av1Val,
+          av2: av2Val,
+          av3: av3Val,
+          attendance: Math.round(presencePct),
+        };
+      });
+    },
+    enabled: !!classId,
+  });
 };
 
-// 4. Academico e Financeiro (Estudante)
+// =============================================================
+// 5. ACADÊMICO E FINANCEIRO — ESTUDANTE
+// =============================================================
+
+export const useGrades = (studentId?: string) => {
+  return useQuery({
+    queryKey: ['student-grades', studentId],
+    queryFn: async () => {
+      if (!studentId) return [];
+      const { data, error } = await supabase
+        .from('grades')
+        .select('*, classes(name)')
+        .eq('student_id', studentId);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!studentId,
+  });
+};
 
 export const useFinancial = (studentId?: string) => {
-    return useQuery({
-        queryKey: ["student-financial", studentId],
-        queryFn: async () => {
-            if (!studentId) return [];
-            const { data, error } = await supabase
-                .from("financial_records")
-                .select("*")
-                .eq("student_id", studentId)
-                .order("due_date", { ascending: false });
-            if (error) throw error;
-            return data;
-        },
-        enabled: !!studentId
-    });
+  return useQuery({
+    queryKey: ['student-financial', studentId],
+    queryFn: async () => {
+      if (!studentId) return [];
+      const { data, error } = await supabase
+        .from('financial_records')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('due_date', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!studentId,
+  });
 };
 
 export const useAttendance = (studentId?: string) => {
-    return useQuery({
-        queryKey: ["student-attendance", studentId],
-        queryFn: async () => {
-            if (!studentId) return [];
-            const { data, error } = await supabase
-                .from("attendance")
-                .select("*")
-                .eq("student_id", studentId)
-                .order("date", { ascending: false });
-            if (error) throw error;
-            return data;
-        },
-        enabled: !!studentId
-    });
+  return useQuery({
+    queryKey: ['student-attendance', studentId],
+    queryFn: async () => {
+      if (!studentId) return [];
+      const { data, error } = await supabase
+        .from('attendance')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('date', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!studentId,
+  });
 };
 
 export const useMaterials = (classId?: string) => {
-    return useQuery({
-        queryKey: ["materials", classId],
-        queryFn: async () => {
-            if (!classId) return [];
-            const { data, error } = await supabase
-                .from("materials")
-                .select("*")
-                .eq("class_id", classId)
-                .order("created_at", { ascending: false });
-            if (error) throw error;
-            return data;
-        },
-        enabled: !!classId
-    });
+  return useQuery({
+    queryKey: ['materials', classId],
+    queryFn: async () => {
+      if (!classId) return [];
+      const { data, error } = await supabase
+        .from('materials')
+        .select('*')
+        .eq('class_id', classId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!classId,
+  });
 };
 
-// 5. Chat e Comunicacao (Realtime)
+// =============================================================
+// 6. CHAT E COMUNICAÇÃO — REALTIME
+// =============================================================
 
 export const useAnnouncements = (role?: string) => {
-    return useQuery({
-        queryKey: ["announcements", role],
-        queryFn: async () => {
-            let query = supabase
-                .from("announcements")
-                .select("*")
-                .order("created_at", { ascending: false });
+  return useQuery({
+    queryKey: ['announcements', role],
+    queryFn: async () => {
+      let query = supabase
+        .from('announcements')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-            if (role) {
-                query = query.or(`target_role.eq.${role},target_role.eq.todos`);
-            }
+      if (role) {
+        query = query.or(`target_role.eq.${role},target_role.eq.todos`);
+      }
 
-            const { data, error } = await query;
-            if (error) throw error;
-            return data;
-        },
-    });
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+  });
 };
 
 export const useCreateAnnouncement = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: async (announcement: {
-            title: string;
-            content: string;
-            category: string;
-            priority: string;
-            target_role: string;
-        }) => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("Nao autenticado");
-
-            const { data, error } = await supabase
-                .from("announcements")
-                .insert([{ ...announcement, author_id: user.id }])
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["announcements"] });
-        },
-    });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (announcement: {
+      title: string;
+      content: string;
+      category: string;
+      priority: string;
+      target_role: string;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Não autenticado');
+      const { data, error } = await supabase
+        .from('announcements')
+        .insert({ ...announcement, author_id: user.id })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['announcements'] });
+    },
+  });
 };
 
-// 6. Criacao e Gestao
+// =============================================================
+// 7. CRIAÇÃO E GESTÃO
+// =============================================================
+
 export const useCreateClass = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: async (newClass: { name: string; period: string }) => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("Não autenticado");
-
-            const { data, error } = await supabase
-                .from("classes")
-                .insert([{
-                    name: newClass.name,
-                    period: newClass.period,
-                    teacher_id: user.id
-                }])
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["teacher-classes"] });
-        },
-    });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (newClass: {
+      name: string;
+      period: string;
+      subject?: string;   // ← PATCH: campo adicionado
+      schedule?: string;  // ← PATCH: campo adicionado
+      room?: string;      // ← PATCH: campo adicionado
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Não autenticado');
+      const { data, error } = await supabase
+        .from('classes')
+        .insert({
+          name: newClass.name,
+          period: newClass.period,
+          subject: newClass.subject ?? null,   // ← PATCH
+          schedule: newClass.schedule ?? null, // ← PATCH
+          room: newClass.room ?? null,         // ← PATCH
+          teacher_id: user.id,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teacher-classes'] });
+    },
+  });
 };
 
 export const useCreateUser = () => {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (user: {
-      email: string
-      full_name: string
-      role: string
-    }) => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      if (!session) throw new Error('Sessão expirada. Faça login novamente.')
-
+    mutationFn: async (user: { email: string; fullname: string; role: string }) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Sessão expirada. Faça login novamente.');
       const { data, error } = await supabase.functions.invoke('create-user', {
         body: user,
         headers: { Authorization: `Bearer ${session.access_token}` },
-      })
-
-      if (error) throw error
-      if (data?.error) throw new Error(data.error)
-      return data
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['manager-data'] })
-      queryClient.invalidateQueries({ queryKey: ['all-students'] })
-      queryClient.invalidateQueries({ queryKey: ['all-teachers'] })
+      queryClient.invalidateQueries({ queryKey: ['manager-data'] });
+      queryClient.invalidateQueries({ queryKey: ['all-students'] });
+      queryClient.invalidateQueries({ queryKey: ['all-teachers'] });
     },
-  })
-}
-
+  });
+};
 
 export const useUploadMaterial = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: async (material: {
-            class_id: string;
-            title: string;
-            description: string;
-            material_type: string;
-            content_url: string;
-        }) => {
-            const { data, error } = await supabase
-                .from("materials")
-                .insert([material])
-                .select()
-                .single();
-            if (error) throw error;
-            return data;
-        },
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: ["materials", variables.class_id] });
-        }
-    });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (material: {
+      classid: string;
+      title: string;
+      description: string;
+      materialtype: string;
+      contenturl: string;
+    }) => {
+      const { data, error } = await supabase
+        .from('materials')
+        .insert({
+          class_id: material.classid,
+          title: material.title,
+          description: material.description,
+          material_type: material.materialtype,
+          content_url: material.contenturl,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['materials', variables.classid] });
+    },
+  });
 };
 
 export const useGeneratePayment = () => {
-    return useMutation({
-        mutationFn: async (data: { amount: number; description: string; studentProfile: any }) => {
-            const { data: { session } } = await supabase.auth.getSession();
-            const { data: result, error } = await supabase.functions.invoke('create-asaas-charge', {
-                body: {
-                    amount: data.amount,
-                    description: data.description,
-                    studentId: data.studentProfile.id,
-                    studentEmail: session?.user?.email,
-                    studentName: data.studentProfile.full_name,
-                    studentCpf: '000.000.000-00'
-                }
-            });
-
-            if (error) throw error;
-            if (result.error) throw new Error(result.error);
-
-            return {
-                pixCode: result.invoiceUrl,
-                pix_qr_code: result.pixCode || '',
-                pix_image_url: result.pixImage || '',
-                billingType: result.billingType,
-                invoiceUrl: result.invoiceUrl,
-                boleto_url: result.bankSlipUrl || result.invoiceUrl
-            };
+  return useMutation({
+    mutationFn: async (data: {
+      amount: number;
+      description: string;
+      studentProfile: any;
+    }) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data: result, error } = await supabase.functions.invoke('create-asaas-charge', {
+        body: {
+          amount: data.amount,
+          description: data.description,
+          studentId: data.studentProfile.id,
+          studentEmail: session?.user?.email,
+          studentName: data.studentProfile.full_name,
+          studentCpf: '000.000.000-00',
         },
-    });
+      });
+      if (error) throw error;
+      if (result.error) throw new Error(result.error);
+      return {
+        pixCode: result.invoiceUrl,
+        pixqrcode: result.pixCode,
+        piximageurl: result.pixImage,
+        billingType: result.billingType,
+        invoiceUrl: result.invoiceUrl,
+        boletourl: result.bankSlipUrl ?? result.invoiceUrl,
+      };
+    },
+  });
 };
