@@ -23,16 +23,21 @@ export function AdminChat({ receiverId, onClose }: AdminChatProps) {
     // Buscar lista de possíveis destinatários (Docentes e Gestores)
     useEffect(() => {
         const fetchReceivers = async () => {
+            const targetRoles = profile?.role === 'aluno'
+                ? ['docente', 'gestor']            // students contact staff only
+                : ['aluno', 'docente', 'gestor']   // staff contacts everyone
+
             const { data } = await supabase
-                .from("profiles")
-                .select("id, full_name, role")
-                .in("role", ["docente", "gestor"]);
+                .from('profiles')
+                .select('id, full_name, role')
+                .in('role', targetRoles)
+                .neq('id', profile?.id)            // exclude self from contact list
 
             if (data) {
-                // Filtrar o próprio usuário
-                setReceivers(data.filter(r => r.id !== profile?.id));
+                setReceivers(data);
             }
         };
+
 
         if (profile) fetchReceivers();
     }, [profile]);
