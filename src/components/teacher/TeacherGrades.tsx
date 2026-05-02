@@ -36,12 +36,15 @@ export function TeacherGrades({ students, classes, selectedClass, onClassChange 
   }
 
   const getFinal = (sid: string) => {
-    const vals = [grades[sid]?.av1, grades[sid]?.av2, grades[sid]?.av3]
-      .map(v => parseFloat(v || "0"))
-      .filter(v => !isNaN(v) && v > 0);
-    if (!vals.length) return null;
-    return (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
-  };
+    const raw = [grades[sid]?.av1, grades[sid]?.av2, grades[sid]?.av3]
+    // Only include fields that were explicitly filled in
+    const entered = raw.filter((v) => v !== '' && v !== undefined && v !== null)
+    if (entered.length === 0) return null // nothing entered yet — show as pending
+    const vals = entered.map((v) => parseFloat(v as string))
+    if (vals.some((v) => isNaN(v))) return 'Inválido'
+    return (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1)
+  }
+
 
   return (
     <div className="space-y-6">

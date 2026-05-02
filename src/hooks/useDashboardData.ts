@@ -72,9 +72,9 @@ export const useManagerData = () => {
             const { count: teachersCount } = await supabase.from("profiles").select("*", { count: 'exact', head: true }).eq("role", "docente");
             const { count: classesCount } = await supabase.from("classes").select("*", { count: 'exact', head: true });
 
-            const { data: attData } = await supabase.from("attendance").select("is_present");
+            const { data: attData } = await supabase.from("attendance").select("status");
             const attRate = attData && attData.length > 0
-                ? (attData.filter(a => a.is_present).length / attData.length) * 100
+                ? (attData.filter(a => a.status === 'presente').length / attData.length) * 100
                 : 0;
 
             const { data: gradeData } = await supabase.from("grades").select("grade_value");
@@ -158,28 +158,29 @@ export const useCoursePerformance = () => {
         queryKey: ["course-performance"],
         queryFn: async () => {
             const { data, error } = await supabase
-                .from("grades")
-                .select(`
-                    grade_value, av1, av2, av3,
-                    student_id,
-                    classes ( name )
-                `);
+                .from('grades')
+                .select('grade_value, av1, av2, av3, student_id, class_id, classes!inner(name)');
 
             if (error) return [];
 
             const groupedByClass: Record<string, { sum: number, count: number, students: Set<string> }> = {};
 
-            (data as any[])?.forEach(g => {
-                const className = g.classes?.name || "Geral";
+            data?.forEach((g: any) => {
+                const className = g.classes?.name || 'Geral'
                 if (!groupedByClass[className]) {
-                    groupedByClass[className] = { sum: 0, count: 0, students: new Set() };
+                    groupedByClass[className] = { sum: 0, count: 0, students: new Set<string>() }
                 }
-                const avgs = [g.av1, g.av2, g.av3].filter(v => v != null);
-                const gradeVal = Number(g.grade_value) || (avgs.length > 0 ? avgs.reduce((s: number, v: any) => s + Number(v), 0) / avgs.length : 0);
-                groupedByClass[className].sum += gradeVal;
-                groupedByClass[className].count += 1;
-                groupedByClass[className].students.add(g.student_id);
-            });
+                // Use av1/av2/av3 if available, fall back to grade_value
+                const avgs = [g.av1, g.av2, g.av3].filter((v) => v !== null && v !== undefined)
+                const gradeVal =
+                    avgs.length > 0
+                        ? avgs.reduce((s: number, v: any) => s + Number(v), 0) / avgs.length
+                        : Number(g.grade_value) || 0
+
+                groupedByClass[className].sum += gradeVal
+                groupedByClass[className].count += 1
+                groupedByClass[className].students.add(g.student_id)
+            })
 
             return Object.entries(groupedByClass).map(([name, data]) => ({
                 course: name,
@@ -251,7 +252,7 @@ export const useClassStudents = (classId?: string) => {
 
                 const studentAtts = attendance.filter(a => a.student_id === studentId);
                 const presencePct = studentAtts.length > 0
-                    ? (studentAtts.filter(a => a.is_present).length / studentAtts.length) * 100
+                    ? (studentAtts.filter(a => a.status === 'presente').length / studentAtts.length) * 100
                     : 100;
 
                 return {
@@ -341,52 +342,67 @@ export const useMaterials = (classId?: string) => {
 };
 
 // 5. Chat e Comunicacao (Realtime)
-export const useChatMessages = (receiverId: string) => {
-    const queryClient = useQueryClient();
+export const useChatMessages = (receiverId: string | null) => {
+  const queryClient = useQueryClient()
 
-    useEffect(() => {
-        if (!receiverId) return;
+  useEffect(() => {
+    if (!receiverId) return
 
-        const channel = supabase
-            .channel(`chat-${receiverId}`)
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'chat_messages',
-            }, (payload: any) => {
-                const msg = payload.new;
-                // Only invalidate if this message is part of our conversation
-                if (msg.sender_id === receiverId || msg.receiver_id === receiverId) {
-                    queryClient.invalidateQueries({ queryKey: ["chat", receiverId] });
-                }
-            })
-            .subscribe();
+    let currentUserId: string | null = null
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      currentUserId = user?.id ?? null
+    })
 
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [receiverId, queryClient]);
+    const channel = supabase
+      .channel(`chat-${receiverId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'chat_messages' },
+        (payload: any) => {
+          const msg = payload.new
+          // Only refresh if message belongs to this exact conversation
+          const isRelevant =
+            (msg.sender_id === currentUserId && msg.receiver_id === receiverId) ||
+            (msg.sender_id === receiverId && msg.receiver_id === currentUserId)
+          if (isRelevant) {
+            queryClient.invalidateQueries({ queryKey: ['chat', receiverId] })
+          }
+        }
+      )
+      .subscribe()
 
-    return useQuery({
-        queryKey: ["chat", receiverId],
-        queryFn: async () => {
-            if (!receiverId) return [];
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return [];
+    // Critical: clean up subscription on unmount to prevent memory leaks
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [receiverId, queryClient])
 
-            const { data, error } = await supabase
-                .from("chat_messages")
-                .select("*")
-                .or(`and(sender_id.eq.${user.id},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${user.id})`)
-                .order("created_at", { ascending: true });
+  return useQuery({
+    queryKey: ['chat', receiverId],
+    queryFn: async () => {
+      if (!receiverId) return []
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return []
 
-            if (error) throw error;
-            return data;
-        },
-        enabled: !!receiverId,
-        refetchInterval: 5000, // Polling fallback every 5s
-    });
-};
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .or(
+          `and(sender_id.eq.${user.id},receiver_id.eq.${receiverId}),` +
+            `and(sender_id.eq.${receiverId},receiver_id.eq.${user.id})`
+        )
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+      return data ?? []
+    },
+    enabled: !!receiverId,
+    // NO refetchInterval — Realtime handles all live updates
+  })
+}
+
 
 export const useSendMessage = () => {
     const queryClient = useQueryClient();
@@ -490,30 +506,35 @@ export const useCreateClass = () => {
 };
 
 export const useCreateUser = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: async (user: { email: string; full_name: string; role: string }) => {
-            const { data, error } = await supabase.auth.signUp({
-                email: user.email,
-                password: 'EduFlowTemp123!',
-                options: {
-                    data: {
-                        full_name: user.full_name,
-                        role: user.role
-                    }
-                }
-            });
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (user: {
+      email: string
+      full_name: string
+      role: string
+    }) => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session) throw new Error('Sessão expirada. Faça login novamente.')
 
-            if (error) throw error;
-            return data;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["manager-data"] });
-            queryClient.invalidateQueries({ queryKey: ["all-students"] });
-            queryClient.invalidateQueries({ queryKey: ["all-teachers"] });
-        },
-    });
-};
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: user,
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['manager-data'] })
+      queryClient.invalidateQueries({ queryKey: ['all-students'] })
+      queryClient.invalidateQueries({ queryKey: ['all-teachers'] })
+    },
+  })
+}
+
 
 export const useUploadMaterial = () => {
     const queryClient = useQueryClient();
