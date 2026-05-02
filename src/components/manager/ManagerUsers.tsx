@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Users, Search, UserCheck, UserX, Plus, X } from "lucide-react";
+import { Users, Search, UserCheck, Plus, X } from "lucide-react";
 import { UserRole } from "@/types";
-import { useCreateUser, useAllStudents, useAllTeachers } from "@/hooks/useDashboardData";
+import { useCreateUser } from "@/hooks/useDashboardData";
+import { useAllStudents, useAllTeachers } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
 
 interface Props {
@@ -15,8 +16,8 @@ export function ManagerUsers({ kpis }: Props) {
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserRole, setNewUserRole] = useState<UserRole>("aluno");
-  const { data: realStudents, isLoading: loadingStudents } = useAllStudents();
-  const { data: realTeachers, isLoading: loadingTeachers } = useAllTeachers();
+  const { data: realStudents } = useAllStudents();
+  const { data: realTeachers } = useAllTeachers();
   const createUserMutation = useCreateUser();
   const { toast } = useToast();
 
@@ -33,7 +34,11 @@ export function ManagerUsers({ kpis }: Props) {
       setNewUserName("");
       setNewUserEmail("");
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro", description: error.message || "Erro ao criar usuário." });
+      toast({
+        variant: "destructive",
+        title: "Erro ao criar usuário",
+        description: error?.message ?? "Tente novamente.",
+      });
     }
   };
 

@@ -4,7 +4,9 @@ import {
   LayoutDashboard, BookOpen, DollarSign, CalendarCheck, Calendar,
   FileText, Upload, CreditCard, Bell
 } from "lucide-react";
-import { useProfile, useGrades, useFinancial, useAnnouncements, useMaterials, useAttendance } from "@/hooks/useDashboardData";
+import { useFinancial, useAnnouncements, useMaterials, useAttendance } from "@/hooks/useDashboardData";
+import { useProfile } from "@/hooks/useProfile";
+import { useGrades } from "@/hooks/useGrades";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { StudentHome } from "@/components/student/StudentHome";
@@ -33,9 +35,9 @@ export default function StudentDashboard() {
   const [activeItem, setActiveItem] = useState("home");
 
   const { data: profile, isLoading: profileLoading } = useProfile();
-  const { data: grades, isLoading: gradesLoading } = useGrades(profile?.id);
-  const { data: payments, isLoading: financialLoading } = useFinancial(profile?.id);
-  const { data: notices, isLoading: noticesLoading } = useAnnouncements();
+  const { data: grades } = useGrades(profile?.id);
+  const { data: payments } = useFinancial(profile?.id);
+  const { data: notices } = useAnnouncements();
   const { data: attendanceRecords } = useAttendance(profile?.id);
 
   // Busca turmas do aluno para os materiais
@@ -54,7 +56,7 @@ export default function StudentDashboard() {
   });
 
   const studentClassId = enrollments?.[0]?.class_id;
-  const { data: materials, isLoading: materialsLoading } = useMaterials(studentClassId);
+  const { data: materials, isLoading: materialsLoading } = useMaterials(studentClassId as string);
 
   if (profileLoading || materialsLoading) {
     return (
@@ -87,7 +89,7 @@ export default function StudentDashboard() {
   const attRecords = (attendanceRecords || []).map((r: any) => ({
     subject: r.class_id || "Aula",
     date: r.date ? new Date(r.date).toLocaleDateString('pt-BR') : '',
-    status: r.status || (r.is_present ? "presente" : "ausente"),
+    status: r.status ?? "presente",
   }));
 
   const attTotal = attRecords.length;
@@ -96,15 +98,16 @@ export default function StudentDashboard() {
 
   const renderContent = () => {
     switch (activeItem) {
-      case "home": return <StudentHome student={studentData} grades={grades || []} payments={payments || []} notices={notices || []} attendanceRate={studentAttendanceRate} onNavigate={setActiveItem} />;
-      case "grades": return <StudentGrades grades={grades || []} />;
-      case "financial": return <StudentFinancial payments={payments || []} />;
+      case "home": return <StudentHome student={studentData} grades={(grades || []) as any} payments={(payments || []) as any} notices={(notices || []) as any} attendanceRate={studentAttendanceRate} onNavigate={setActiveItem} />;
+      case "grades": return <StudentGrades grades={(grades || []) as any} />;
+      case "financial": return <StudentFinancial payments={(payments || []) as any} />;
       case "attendance": return <StudentAttendance records={attRecords} />;
-      case "materials": return <StudentMaterials materials={materials || []} />;
+      case "materials": return <StudentMaterials materials={(materials || []) as any} />;
       case "documents": return <StudentDocuments />;
-      case "notices": return <StudentNotices notices={notices || []} />;
+      case "notices": return <StudentNotices notices={(notices || []) as any} />;
       case "idcard": return <StudentIDCard student={studentData} />;
-      default: return <StudentHome student={studentData} grades={grades || []} payments={payments || []} notices={notices || []} attendanceRate={studentAttendanceRate} onNavigate={setActiveItem} />;
+      default: return <StudentHome student={studentData} grades={(grades || []) as any} payments={(payments || []) as any} notices={(notices || []) as any} attendanceRate={studentAttendanceRate} onNavigate={setActiveItem} />;
+
     }
   };
 

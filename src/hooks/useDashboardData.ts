@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ManagerKPI {
@@ -14,98 +13,57 @@ export interface ManagerKPI {
 }
 
 // 1. Perfil e Usuarios
-export const useProfile = () => {
-    return useQuery({
-        queryKey: ["profile"],
-        queryFn: async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return null;
-
-            const { data, error } = await supabase
-                .from("profiles")
-                .select("*")
-                .eq("id", user.id)
-                .single();
-
-            if (error) throw error;
-            return data;
-        },
-    });
-};
-
-export const useAllStudents = () => {
-    return useQuery({
-        queryKey: ["all-students"],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from("profiles")
-                .select("*")
-                .eq("role", "aluno")
-                .order("full_name");
-            if (error) throw error;
-            return data;
-        },
-    });
-};
-
-export const useAllTeachers = () => {
-    return useQuery({
-        queryKey: ["all-teachers"],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from("profiles")
-                .select("*")
-                .eq("role", "docente")
-                .order("full_name");
-            if (error) throw error;
-            return data;
-        },
-    });
-};
 
 // 2. Dashboard do Gestor (Real Data)
 export const useManagerData = () => {
     return useQuery<ManagerKPI>({
         queryKey: ["manager-data"],
         queryFn: async () => {
-            const { count: studentsCount } = await supabase.from("profiles").select("*", { count: 'exact', head: true }).eq("role", "aluno");
-            const { count: teachersCount } = await supabase.from("profiles").select("*", { count: 'exact', head: true }).eq("role", "docente");
-            const { count: classesCount } = await supabase.from("classes").select("*", { count: 'exact', head: true });
+            const [
+                { count: studentsCount },
+                { count: teachersCount },
+                { count: classesCount },
+                { data: attData },
+                { data: gradeData },
+                { data: finData },
+            ] = await Promise.all([
+                supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'aluno'),
+                supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'docente'),
+                supabase.from('classes').select('*', { count: 'exact', head: true }),
+                supabase.from('attendance').select('status'),
+                supabase.from('grades').select('grade_value'),
+                supabase.from('financial_records').select('amount, is_paid'),
+            ])
 
-            const { data: attData } = await supabase.from("attendance").select("status");
             const attRate = attData && attData.length > 0
-                ? (attData.filter(a => a.status === 'presente').length / attData.length) * 100
-                : 0;
+                ? (attData.filter((a: any) => a.status === 'presente').length / attData.length) * 100
+                : 0
 
-            const { data: gradeData } = await supabase.from("grades").select("grade_value");
             const appRate = gradeData && gradeData.length > 0
-                ? (gradeData.filter(g => Number(g.grade_value || 0) >= 7).length / gradeData.length) * 100
-                : 0;
+                ? (gradeData.filter((g: any) => Number(g.grade_value) >= 7).length / gradeData.length) * 100
+                : 0
 
-            let revMonth = 0;
-            let revDefault = 0;
-
-            try {
-                const { data: finData } = await supabase.from("financial_records").select("amount, is_paid");
-                if (finData && finData.length > 0) {
-                    revMonth = finData.filter(f => f.is_paid).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
-                    revDefault = (finData.filter(f => !f.is_paid).length / finData.length) * 100;
-                }
-            } catch (e) {
-                console.warn("Erro ao buscar dados financeiros reais:", e);
+            let revMonth = 0
+            let revDefault = 0
+            if (finData && finData.length > 0) {
+                revMonth = finData
+                    .filter((f: any) => f.is_paid)
+                    .reduce((acc: number, curr: any) => acc + Number(curr.amount), 0)
+                revDefault = (finData.filter((f: any) => !f.is_paid).length / finData.length) * 100
             }
 
             return {
-                totalStudents: studentsCount || 0,
-                totalTeachers: teachersCount || 0,
-                totalClasses: classesCount || 0,
+                totalStudents: studentsCount ?? 0,
+                totalTeachers: teachersCount ?? 0,
+                totalClasses: classesCount ?? 0,
                 attendanceRate: Math.round(attRate),
                 approvalRate: Math.round(appRate),
                 revenueMonth: revMonth,
                 revenueDefault: Number(revDefault.toFixed(1)),
-                absenteeismRate: Math.round(100 - attRate)
-            };
+                absenteeismRate: Math.round(100 - attRate),
+            }
         },
+
     });
 };
 
@@ -214,41 +172,38 @@ export const useClassStudents = (classId?: string) => {
         queryFn: async () => {
             if (!classId) return [];
 
-            const { data: enrolls, error: enrollError } = await supabase
-                .from("enrollments")
-                .select(`
-                    student_id,
-                    profiles (
-                        id,
-                        full_name,
-                        student_card_id
-                    )
-                `)
-                .eq("class_id", classId);
+            const [
+                { data: enrolls, error: enrollError },
+                { data: grades, error: gradesError },
+                { data: attendance, error: attError },
+            ] = await Promise.all([
+                supabase
+                    .from('enrollments')
+                    .select('student_id, profiles(id, full_name, student_card_id)')
+                    .eq('class_id', classId),
+                supabase
+                    .from('grades')
+                    .select('id, student_id, class_id, grade_value, av1, av2, av3, feedback, updated_at')
+                    .eq('class_id', classId),
+                supabase
+                    .from('attendance')
+                    .select('*')
+                    .eq('class_id', classId),
+            ])
 
             if (enrollError) throw enrollError;
-
-            const { data: grades, error: gradesError } = await supabase
-                .from("grades")
-                .select("*")
-                .eq("class_id", classId);
-
             if (gradesError) throw gradesError;
-
-            const { data: attendance, error: attError } = await supabase
-                .from("attendance")
-                .select("*")
-                .eq("class_id", classId);
-
             if (attError) throw attError;
+
 
             return enrolls.map((d: any) => {
                 const studentId = d.profiles.id;
-                const studentGrades = grades.filter(g => g.student_id === studentId);
+                const studentGrades = (grades as any[]).filter(g => g.student_id === studentId);
                 const sg = studentGrades[0];
-                const mainGrade = sg?.grade_value != null ? Number(sg.grade_value) : null;
-                const av2Val: number | null = null;
-                const av3Val: number | null = null;
+                const mainGrade = sg?.av1 != null ? Number(sg.av1) :
+                                  sg?.grade_value != null ? Number(sg.grade_value) : null;
+                const av2Val: number | null = sg?.av2 != null ? Number(sg.av2) : null;
+                const av3Val: number | null = sg?.av3 != null ? Number(sg.av3) : null;
 
                 const studentAtts = attendance.filter(a => a.student_id === studentId);
                 const presencePct = studentAtts.length > 0
@@ -271,24 +226,6 @@ export const useClassStudents = (classId?: string) => {
 };
 
 // 4. Academico e Financeiro (Estudante)
-export const useGrades = (studentId?: string) => {
-    return useQuery({
-        queryKey: ["student-grades", studentId],
-        queryFn: async () => {
-            if (!studentId) return [];
-            const { data, error } = await supabase
-                .from("grades")
-                .select(`
-                    *,
-                    classes ( name )
-                `)
-                .eq("student_id", studentId);
-            if (error) throw error;
-            return data;
-        },
-        enabled: !!studentId
-    });
-};
 
 export const useFinancial = (studentId?: string) => {
     return useQuery({
@@ -342,93 +279,6 @@ export const useMaterials = (classId?: string) => {
 };
 
 // 5. Chat e Comunicacao (Realtime)
-export const useChatMessages = (receiverId: string | null) => {
-  const queryClient = useQueryClient()
-
-  useEffect(() => {
-    if (!receiverId) return
-
-    let currentUserId: string | null = null
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      currentUserId = user?.id ?? null
-    })
-
-    const channel = supabase
-      .channel(`chat-${receiverId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'chat_messages' },
-        (payload: any) => {
-          const msg = payload.new
-          // Only refresh if message belongs to this exact conversation
-          const isRelevant =
-            (msg.sender_id === currentUserId && msg.receiver_id === receiverId) ||
-            (msg.sender_id === receiverId && msg.receiver_id === currentUserId)
-          if (isRelevant) {
-            queryClient.invalidateQueries({ queryKey: ['chat', receiverId] })
-          }
-        }
-      )
-      .subscribe()
-
-    // Critical: clean up subscription on unmount to prevent memory leaks
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [receiverId, queryClient])
-
-  return useQuery({
-    queryKey: ['chat', receiverId],
-    queryFn: async () => {
-      if (!receiverId) return []
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return []
-
-      const { data, error } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .or(
-          `and(sender_id.eq.${user.id},receiver_id.eq.${receiverId}),` +
-            `and(sender_id.eq.${receiverId},receiver_id.eq.${user.id})`
-        )
-        .order('created_at', { ascending: true })
-
-      if (error) throw error
-      return data ?? []
-    },
-    enabled: !!receiverId,
-    // NO refetchInterval — Realtime handles all live updates
-  })
-}
-
-
-export const useSendMessage = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: async (message: { receiver_id: string, content: string }) => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("Usuário não autenticado");
-
-            const { data, error } = await supabase
-                .from("chat_messages")
-                .insert([{
-                    sender_id: user.id,
-                    receiver_id: message.receiver_id,
-                    content: message.content
-                }])
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data;
-        },
-        onSuccess: (_data, variables) => {
-            queryClient.invalidateQueries({ queryKey: ["chat", variables.receiver_id] });
-        }
-    });
-};
 
 export const useAnnouncements = (role?: string) => {
     return useQuery({

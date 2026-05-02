@@ -11,47 +11,59 @@ import MfaSetup from './pages/MfaSetup'
 import MfaChallenge from './pages/MfaChallenge'
 import NotFound from './pages/NotFound'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { AuthProvider } from './contexts/AuthContext'
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 2,
+      gcTime: 1000 * 60 * 10,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route
-            path="/aluno"
-            element={
-              <ProtectedRoute requiredRole="aluno">
-                <StudentDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/docente"
-            element={
-              <ProtectedRoute requiredRole="docente">
-                <TeacherDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/gestor"
-            element={
-              <ProtectedRoute requiredRole="gestor">
-                <ManagerDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/mfa-setup" element={<MfaSetup />} />
-          <Route path="/mfa-challenge" element={<MfaChallenge />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route
+              path="/aluno"
+              element={
+                <ProtectedRoute requiredRole="aluno">
+                  <StudentDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/docente"
+              element={
+                <ProtectedRoute requiredRole="docente">
+                  <TeacherDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/gestor"
+              element={
+                <ProtectedRoute requiredRole="gestor">
+                  <ManagerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/mfa-setup" element={<MfaSetup />} />
+            <Route path="/mfa-challenge" element={<MfaChallenge />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 )
 

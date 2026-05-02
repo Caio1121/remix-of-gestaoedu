@@ -2,6 +2,8 @@ import { useState } from "react";
 import { ClassStudent, TeacherClass } from "@/types";
 import { Save, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from '@/integrations/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 
 interface Props {
   students: ClassStudent[];
@@ -23,11 +25,47 @@ export function TeacherGrades({ students, classes, selectedClass, onClassChange 
     return init;
   });
   const [saved, setSaved] = useState(false);
+  const { toast } = useToast()
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
+  const handleSave = async () => {
+    try {
+      const upsertData = students.map((s) => {
+        const av1Raw = grades[s.id]?.av1
+        const av2Raw = grades[s.id]?.av2
+        const av3Raw = grades[s.id]?.av3
+        const av1Val = av1Raw !== '' && av1Raw != null ? parseFloat(av1Raw as string) : null
+        const av2Val = av2Raw !== '' && av2Raw != null ? parseFloat(av2Raw as string) : null
+        const av3Val = av3Raw !== '' && av3Raw != null ? parseFloat(av3Raw as string) : null
+        const finalStr = getFinal(s.id)
+        const finalVal = finalStr && finalStr !== 'Inválido' ? parseFloat(finalStr) : null
+        return {
+          student_id: s.id,
+          class_id: selectedClass,
+          av1: av1Val,
+          av2: av2Val,
+          av3: av3Val,
+          grade_value: finalVal,
+          updated_at: new Date().toISOString(),
+        }
+      })
+
+      const { error } = await supabase
+        .from('grades')
+        .upsert(upsertData, { onConflict: 'student_id,class_id' })
+
+      if (error) throw error
+
+      setSaved(true)
+      toast({ title: 'Notas salvas com sucesso' })
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao salvar notas',
+        description: err?.message ?? 'Tente novamente.',
+        variant: 'destructive',
+      })
+    }
+  }
 
   const cls = classes.find(c => c.id === selectedClass) || classes[0];
 
@@ -35,15 +73,15 @@ export function TeacherGrades({ students, classes, selectedClass, onClassChange 
     return <div className="p-8 text-center text-muted-foreground">Nenhuma turma encontrada.</div>;
   }
 
-  const getFinal = (sid: string) => {
-    const raw = [grades[sid]?.av1, grades[sid]?.av2, grades[sid]?.av3]
-    // Only include fields that were explicitly filled in
-    const entered = raw.filter((v) => v !== '' && v !== undefined && v !== null)
-    if (entered.length === 0) return null // nothing entered yet — show as pending
-    const vals = entered.map((v) => parseFloat(v as string))
-    if (vals.some((v) => isNaN(v))) return 'Inválido'
-    return (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1)
-  }
+const getFinal = (sid: string): string | null => {
+  const raw = [grades[sid]?.av1, grades[sid]?.av2, grades[sid]?.av3]
+  const entered = raw.filter((v) => v !== '' && v !== undefined && v !== null)
+  if (entered.length === 0) return null
+  const vals = entered.map((v) => parseFloat(v as string))
+  if (vals.some((v) => isNaN(v))) return 'Inválido'
+  return (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1)
+}
+
 
 
   return (

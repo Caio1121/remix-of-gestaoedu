@@ -1,9 +1,9 @@
 import { AttendanceRecord } from "@/types";
-import { CalendarCheck, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
 interface Props { records: AttendanceRecord[] }
 
-const statusConfig = {
+const statusConfig: Record<string, any> = {
   presente: { label: "Presente", icon: CheckCircle, cls: "bg-success-light text-success", dot: "bg-success" },
   ausente: { label: "Ausente", icon: XCircle, cls: "bg-destructive-light text-destructive", dot: "bg-destructive" },
   justificado: { label: "Justificado", icon: AlertCircle, cls: "bg-warning-light text-warning", dot: "bg-warning" },
@@ -72,7 +72,7 @@ export function StudentAttendance({ records }: Props) {
         </div>
         <div className="divide-y divide-border">
           {records.map((r, i) => {
-            const cfg = statusConfig[r.status];
+            const cfg = statusConfig[r.status ?? 'presente'] || statusConfig.presente;
             const Icon = cfg.icon;
             return (
               <div key={i} className="px-5 py-3 flex items-center justify-between hover:bg-muted/20 transition-colors">

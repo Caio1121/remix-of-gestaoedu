@@ -1,4 +1,4 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface CoursePerf { course: string; avg: number; students: number }
 interface Props {
@@ -8,8 +8,6 @@ interface Props {
 
 export function ManagerAcademic({ courses, kpis }: Props) {
   const overallAvg = (courses.reduce((s, c) => s + c.avg, 0) / courses.length).toFixed(2);
-
-  const radarData = courses.map(c => ({ subject: c.course.slice(0, 6), A: c.avg * 10 }));
 
   return (
     <div className="space-y-6">

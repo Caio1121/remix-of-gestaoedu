@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Upload, FileText, Film, Link2, Presentation, Plus, Trash2 } from "lucide-react";
+import { FileText, Film, Link2, Presentation, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useProfile, useTeacherClasses, useMaterials, useUploadMaterial } from "@/hooks/useDashboardData";
+import { useTeacherClasses, useMaterials, useUploadMaterial } from "@/hooks/useDashboardData";
+import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,7 +29,6 @@ export function TeacherContent() {
   const [description, setDescription] = useState("");
   const [type, setType] = useState<"pdf" | "video" | "link" | "slide">("pdf");
   const [contentUrl, setContentUrl] = useState("");
-  const [file, setFile] = useState<File | null>(null);
 
   const handleFileUpload = async (file: File) => {
     try {
@@ -37,7 +37,7 @@ export function TeacherContent() {
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${selectedClassId}/${fileName}`;
 
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('materials')
         .upload(filePath, file);
 
@@ -75,10 +75,13 @@ export function TeacherContent() {
       setTitle("");
       setDescription("");
       setContentUrl("");
-      setFile(null);
       refetch();
-    } catch (error) {
-      toast({ title: "Erro ao publicar", variant: "destructive" });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao publicar",
+        description: error?.message ?? "Tente novamente.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -184,7 +187,7 @@ export function TeacherContent() {
                     </div>
                     <div>
                       <div className="text-sm font-medium text-foreground">{item.title}</div>
-                      <div className="text-xs text-muted-foreground">{item.description || "Sem descrição"} · {new Date(item.created_at).toLocaleDateString()}</div>
+                      <div className="text-xs text-muted-foreground">{item.description || "Sem descrição"} · {new Date(item.created_at || "").toLocaleDateString()}</div>
                     </div>
                   </div>
                   <button onClick={() => handleDelete(item.id)}

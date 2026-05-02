@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
 import { Upload, File, Trash2, Loader2, Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useProfile } from "@/hooks/useDashboardData";
+import { useProfile } from "@/hooks/useProfile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";

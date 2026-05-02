@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { LayoutDashboard, Users, BarChart2, DollarSign, GraduationCap, Megaphone, MessageCircle } from "lucide-react";
-import { useProfile, useManagerData, useRevenueData, useCoursePerformance, useAnnouncements } from "@/hooks/useDashboardData";
+import { useManagerData, useRevenueData, useCoursePerformance, useAnnouncements } from "@/hooks/useDashboardData";
+import { useProfile } from "@/hooks/useProfile";
 import { ManagerHome } from "@/components/manager/ManagerHome";
 import { ManagerFinancial } from "@/components/manager/ManagerFinancial";
 import { ManagerAcademic } from "@/components/manager/ManagerAcademic";

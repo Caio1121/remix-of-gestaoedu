@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { DollarSign, Download, CheckCircle, AlertCircle, Clock, CreditCard, QrCode, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useGeneratePayment, useProfile } from "@/hooks/useDashboardData";
+import { useGeneratePayment } from "@/hooks/useDashboardData";
+import { useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
 
 interface PaymentRecord {
@@ -49,13 +50,14 @@ export function StudentFinancial({ payments }: Props) {
       });
       setSelectedPayment(updated);
       setPaymentType(method);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Erro ao gerar pagamento",
-        description: "Tente novamente em instantes.",
+        description: error?.message ?? "Tente novamente em instantes.",
         variant: "destructive"
       });
     }
+
   };
 
   const copyPix = () => {

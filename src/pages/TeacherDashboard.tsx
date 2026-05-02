@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { LayoutDashboard, Users, BookOpen, CalendarCheck, Upload, BarChart2, MessageCircle } from "lucide-react";
-import { useProfile, useTeacherClasses, useClassStudents } from "@/hooks/useDashboardData";
+import { useTeacherClasses, useClassStudents } from "@/hooks/useDashboardData";
+import { useProfile } from "@/hooks/useProfile";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TeacherHome } from "@/components/teacher/TeacherHome";
@@ -30,7 +31,7 @@ export default function TeacherDashboard() {
 
   const [selectedClassId, setSelectedClassId] = useState<string | undefined>(undefined);
 
-  const { data: students, isLoading: studentsLoading } = useClassStudents(selectedClassId);
+  const { data: students } = useClassStudents(selectedClassId);
 
   const classIds = classes?.map(c => c.id) || [];
 
@@ -45,9 +46,9 @@ export default function TeacherDashboard() {
         .in("class_id", classIds);
 
       const { data: attendance } = await supabase
-        .from("attendance")
-        .select("is_present")
-        .in("class_id", classIds);
+        .from('attendance')
+        .select('status')
+        .in('class_id', classIds)
 
       const validGrades = (grades || []).filter(g => g.grade_value != null);
       const avgGrade = validGrades.length > 0
@@ -55,8 +56,12 @@ export default function TeacherDashboard() {
         : null;
 
       const avgAttendance = attendance && attendance.length > 0
-        ? Math.round((attendance.filter(a => a.is_present).length / attendance.length) * 100)
+        ? Math.round(
+            attendance.filter((a: any) => a.status === 'presente').length /
+            attendance.length * 100
+          )
         : null;
+
 
       return { avgGrade, avgAttendance };
     },
@@ -91,14 +96,15 @@ export default function TeacherDashboard() {
     const studentList = students || [];
 
     switch (activeItem) {
-      case "home": return <TeacherHome teacher={teacherData} classes={classList} onNavigate={setActiveItem} avgGrade={teacherStats?.avgGrade} avgAttendance={teacherStats?.avgAttendance} />;
-      case "classes": return <TeacherClasses classes={classList} onSelectClass={(id) => { setSelectedClassId(id); setActiveItem("grades"); }} />;
-      case "grades": return <TeacherGrades students={studentList} classes={classList} selectedClass={selectedClassId || ""} onClassChange={setSelectedClassId} />;
-      case "attendance": return <TeacherAttendance students={studentList} classes={classList} selectedClass={selectedClassId || ""} />;
+      case "home": return <TeacherHome teacher={teacherData} classes={classList as any} onNavigate={setActiveItem} avgGrade={teacherStats?.avgGrade} avgAttendance={teacherStats?.avgAttendance} />;
+      case "classes": return <TeacherClasses classes={classList as any} onSelectClass={(id) => { setSelectedClassId(id); setActiveItem("grades"); }} />;
+      case "grades": return <TeacherGrades students={studentList as any} classes={classList as any} selectedClass={selectedClassId || ""} onClassChange={setSelectedClassId} />;
+      case "attendance": return <TeacherAttendance students={studentList as any} classes={classList as any} selectedClass={selectedClassId || ""} />;
       case "content": return <TeacherContent />;
       case "chat": return <div className="p-4 max-w-2xl mx-auto"><AdminChat /></div>;
-      default: return <TeacherHome teacher={teacherData} classes={classList} onNavigate={setActiveItem} />;
+      default: return <TeacherHome teacher={teacherData} classes={classList as any} onNavigate={setActiveItem} />;
     }
+
   };
 
   return (

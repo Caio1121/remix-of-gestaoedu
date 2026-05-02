@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { Send, User, MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useChatMessages, useSendMessage, useProfile } from "@/hooks/useDashboardData";
+import { useChatMessages, useSendMessage } from "@/hooks/useChat";
+import { useProfile } from "@/hooks/useProfile";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AdminChatProps {
@@ -16,6 +18,7 @@ export function AdminChat({ receiverId, onClose }: AdminChatProps) {
     const { data: messages = [] } = useChatMessages(selectedReceiver || "");
     const sendMessage = useSendMessage();
     const { data: profile } = useProfile();
+    const { toast } = useToast();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [receivers, setReceivers] = useState<any[]>([]);
     
@@ -30,8 +33,8 @@ export function AdminChat({ receiverId, onClose }: AdminChatProps) {
             const { data } = await supabase
                 .from('profiles')
                 .select('id, full_name, role')
-                .in('role', targetRoles)
-                .neq('id', profile?.id)            // exclude self from contact list
+                .in('role', targetRoles as any)
+                .neq('id', profile?.id as string)            // exclude self from contact list
 
             if (data) {
                 setReceivers(data);
@@ -59,8 +62,12 @@ export function AdminChat({ receiverId, onClose }: AdminChatProps) {
                 content: content.trim()
             });
             setContent("");
-        } catch (error) {
-            console.error("Erro ao enviar mensagem:", error);
+        } catch (error: any) {
+            toast({
+                title: 'Erro ao enviar mensagem',
+                description: error?.message ?? 'Tente novamente.',
+                variant: 'destructive',
+            })
         }
     };
 

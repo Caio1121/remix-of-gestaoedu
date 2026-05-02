@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Megaphone, Plus, X, AlertCircle, Clock, CheckCircle } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useAnnouncements, useCreateAnnouncement } from "@/hooks/useDashboardData";
 import { useToast } from "@/hooks/use-toast";
 
@@ -8,7 +8,6 @@ export function ManagerAnnouncements() {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [category, setCategory] = useState("geral");
-    const [priority, setPriority] = useState("media");
     const [targetRole, setTargetRole] = useState("docente");
 
     const { data: announcements, isLoading } = useAnnouncements();
@@ -29,9 +28,14 @@ export function ManagerAnnouncements() {
             setIsModalOpen(false);
             setTitle("");
             setContent("");
-        } catch (error) {
-            toast({ variant: "destructive", title: "Erro", description: "Falha ao publicar aviso." });
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Erro ao publicar aviso",
+                description: error?.message ?? "Tente novamente."
+            });
         }
+
     };
 
     return (

@@ -1,5 +1,4 @@
 import { Grade } from "@/types";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface Props { grades: Grade[] }
 
