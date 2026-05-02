@@ -8,7 +8,7 @@ export function ManagerAnnouncements() {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [category, setCategory] = useState("geral");
-    const [priority, setPriority] = useState("media");
+    const [priority] = useState("media");
     const [targetRole, setTargetRole] = useState("docente");
 
     const { data: announcements, isLoading } = useAnnouncements();
