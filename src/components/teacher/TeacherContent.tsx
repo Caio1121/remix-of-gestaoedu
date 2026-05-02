@@ -64,11 +64,11 @@ export function TeacherContent() {
 
     try {
       await uploadMaterial.mutateAsync({
-        class_id: selectedClassId,
+        classid: selectedClassId,
         title,
         description,
-        material_type: type,
-        content_url: contentUrl
+        materialtype: type,
+        contenturl: contentUrl
       });
       toast({ title: "Material publicado!" });
       setShowForm(false);

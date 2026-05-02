@@ -26,7 +26,7 @@ export function ManagerUsers({ kpis }: Props) {
     try {
       await createUserMutation.mutateAsync({
         email: newUserEmail,
-        full_name: newUserName,
+        fullname: newUserName,
         role: newUserRole,
       });
       toast({ title: "Sucesso!", description: "Usuário convidado com sucesso." });
