@@ -134,6 +134,16 @@ export default function Index() {
     }
   };
 
+  const testConnection = async () => {
+    try {
+      const { data, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
+      if (error) throw error;
+      alert("Conexão OK! O banco de dados está respondendo.");
+    } catch (err: any) {
+      alert(`Erro de Conexão: ${err.message}`);
+    }
+  };
+
   const selectedRoleData = roles.find(r => r.id === selectedRole)!;
 
   return (
@@ -280,6 +290,14 @@ export default function Index() {
           <p className="text-center text-xs text-muted-foreground">
             Problemas de acesso? Entre em contato com a secretaria.
           </p>
+          <div className="flex justify-center pt-4">
+            <button
+              onClick={testConnection}
+              className="text-[10px] text-muted-foreground hover:text-primary underline"
+            >
+              Testar Conexão com Supabase
+            </button>
+          </div>
         </div>
       </div>
     </div>
