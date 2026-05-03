@@ -135,11 +135,14 @@ export default function Index() {
   };
 
   const testConnection = async () => {
+    alert("Iniciando teste de conexão... aguarde alguns segundos.");
     try {
+      console.log("Chamando Supabase...");
       const { data, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
       if (error) throw error;
       alert("Conexão OK! O banco de dados está respondendo.");
     } catch (err: any) {
+      console.error("Erro no teste:", err);
       alert(`Erro de Conexão: ${err.message}`);
     }
   };
