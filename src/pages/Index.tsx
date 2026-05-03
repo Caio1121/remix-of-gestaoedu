@@ -126,9 +126,9 @@ export default function Index() {
 
         navigate(`/${profile.role}`);
       }
-    } catch (err) {
-      console.error("Erro inesperado no login:", err);
-      setError("Ocorreu um erro ao tentar entrar. Tente novamente.");
+    } catch (err: any) {
+      console.error("Erro crítico no login:", err);
+      setError(`Erro de conexão: ${err.message || "Verifique sua internet ou as chaves do Supabase"}`);
     } finally {
       setLoading(false);
     }

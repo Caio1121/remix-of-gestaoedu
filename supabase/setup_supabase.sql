@@ -250,6 +250,10 @@ DROP POLICY IF EXISTS "Usuário atualiza próprio perfil" ON public.profiles;
 CREATE POLICY "Usuário atualiza próprio perfil"
   ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Usuário cria próprio perfil" ON public.profiles;
+CREATE POLICY "Usuário cria próprio perfil"
+  ON public.profiles FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
+
 -- CLASSES
 DROP POLICY IF EXISTS "Turmas visíveis por todos" ON public.classes;
 CREATE POLICY "Turmas visíveis por todos"
