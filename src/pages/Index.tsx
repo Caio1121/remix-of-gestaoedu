@@ -127,23 +127,10 @@ export default function Index() {
         navigate(`/${profile.role}`);
       }
     } catch (err: any) {
-      console.error("Erro crítico no login:", err);
-      setError(`Erro de conexão: ${err.message || "Verifique sua internet ou as chaves do Supabase"}`);
+      console.error("Erro no login:", err);
+      setError(`Erro de acesso: ${err.message || "Verifique suas credenciais ou internet"}`);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const testConnection = async () => {
-    alert("Iniciando teste de conexão... aguarde alguns segundos.");
-    try {
-      console.log("Chamando Supabase...");
-      const { data, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
-      if (error) throw error;
-      alert("Conexão OK! O banco de dados está respondendo.");
-    } catch (err: any) {
-      console.error("Erro no teste:", err);
-      alert(`Erro de Conexão: ${err.message}`);
     }
   };
 
@@ -293,14 +280,6 @@ export default function Index() {
           <p className="text-center text-xs text-muted-foreground">
             Problemas de acesso? Entre em contato com a secretaria.
           </p>
-          <div className="flex justify-center pt-4">
-            <button
-              onClick={testConnection}
-              className="text-[10px] text-muted-foreground hover:text-primary underline"
-            >
-              Testar Conexão com Supabase
-            </button>
-          </div>
         </div>
       </div>
     </div>
