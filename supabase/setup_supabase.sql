@@ -17,12 +17,12 @@ END $$;
 -- =============================================================
 -- 2. TABELAS
 -- =============================================================
-
 CREATE TABLE IF NOT EXISTS public.profiles (
   id              UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   full_name       TEXT,
   role            user_role DEFAULT 'aluno',
   student_card_id TEXT UNIQUE,
+  cpf             TEXT,
   created_at      TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -115,11 +115,15 @@ CREATE TABLE IF NOT EXISTS public.audit_log (
 -- =============================================================
 
 -- [PATCH-1a] classes: subject, schedule, room que o frontend usa
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS cpf TEXT;
+
 ALTER TABLE public.classes
   ADD COLUMN IF NOT EXISTS subject  TEXT,
   ADD COLUMN IF NOT EXISTS schedule TEXT,
   ADD COLUMN IF NOT EXISTS room     TEXT;
 
+COMMENT ON COLUMN public.profiles.cpf     IS 'CPF do usuário para integração financeira';
 COMMENT ON COLUMN public.classes.subject  IS 'Matéria/disciplina da turma';
 COMMENT ON COLUMN public.classes.schedule IS 'Horário das aulas (ex: Seg/Qua 19h–21h)';
 COMMENT ON COLUMN public.classes.room     IS 'Sala física ou link remoto';

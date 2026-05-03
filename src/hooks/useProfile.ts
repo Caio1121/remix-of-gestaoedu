@@ -1,22 +1,32 @@
-import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/integrations/supabase/client'
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
+/**
+ * Retorna o perfil do usuário autenticado.
+ * @returns `profile.id`, `profile.fullname`, `profile.role`, `profile.studentcardid`
+ * @example
+ * const { data: profile, isLoading } = useProfile();
+ */
 export const useProfile = () =>
   useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return null
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single()
-      if (error) throw error
-      return data
+        .single();
+      if (error) throw error;
+      return data;
     },
-  })
+  });
 
+/**
+ * Retorna todos os usuários com papel `aluno`, ordenados por nome.
+ * Usado pelo gestor para listagem e criação de vínculos.
+ */
 export const useAllStudents = () =>
   useQuery({
     queryKey: ['all-students'],
@@ -25,12 +35,16 @@ export const useAllStudents = () =>
         .from('profiles')
         .select('*')
         .eq('role', 'aluno')
-        .order('full_name')
-      if (error) throw error
-      return data
+        .order('fullname');
+      if (error) throw error;
+      return data;
     },
-  })
+  });
 
+/**
+ * Retorna todos os usuários com papel `docente`, ordenados por nome.
+ * Usado pelo gestor para listagem e atribuição de turmas.
+ */
 export const useAllTeachers = () =>
   useQuery({
     queryKey: ['all-teachers'],
@@ -39,8 +53,8 @@ export const useAllTeachers = () =>
         .from('profiles')
         .select('*')
         .eq('role', 'docente')
-        .order('full_name')
-      if (error) throw error
-      return data
+        .order('fullname');
+      if (error) throw error;
+      return data;
     },
-  })
+  });
