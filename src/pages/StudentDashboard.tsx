@@ -72,7 +72,7 @@ export default function StudentDashboard() {
   };
 
   const attRecords = (attendanceRecords || []).map((r: any) => ({
-    subject: r.class_id || "Aula",
+    subject: r.classid || "Aula",
     date: r.date ? new Date(r.date).toLocaleDateString('pt-BR') : '',
     status: r.status ?? "presente",
   }));

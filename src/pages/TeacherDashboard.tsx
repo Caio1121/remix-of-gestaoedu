@@ -42,17 +42,17 @@ export default function TeacherDashboard() {
 
       const { data: grades } = await supabase
         .from("grades")
-        .select("grade_value")
-        .in("class_id", classIds);
+        .select("gradevalue")
+        .in("classid", classIds);
 
       const { data: attendance } = await supabase
         .from('attendance')
         .select('status')
-        .in('class_id', classIds)
+        .in('classid', classIds)
 
-      const validGrades = (grades || []).filter(g => g.grade_value != null);
+      const validGrades = (grades || []).filter(g => g.gradevalue != null);
       const avgGrade = validGrades.length > 0
-        ? validGrades.reduce((s, g) => s + Number(g.grade_value), 0) / validGrades.length
+        ? validGrades.reduce((s, g) => s + Number(g.gradevalue), 0) / validGrades.length
         : null;
 
       const avgAttendance = attendance && attendance.length > 0
