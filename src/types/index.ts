@@ -1,4 +1,5 @@
 export type UserRole = "aluno" | "docente" | "gestor";
+export const PASSING_GRADE = 7;
 
 export interface Student {
   id: string;

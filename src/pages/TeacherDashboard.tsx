@@ -85,9 +85,9 @@ export default function TeacherDashboard() {
 
   const teacherData = {
     id: profile?.id || "",
-    name: profile?.full_name || "Docente",
+    name: profile?.fullname || "Docente",
     email: profile?.role || "Professor",
-    avatarInitials: profile?.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "DC",
+    avatarInitials: profile?.fullname?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "DC",
     speciality: "Especialista"
   };
 

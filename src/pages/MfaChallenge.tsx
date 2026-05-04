@@ -6,21 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Shield, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useProfile } from "@/hooks/useProfile";
 
 export default function MfaChallenge() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { data: profile } = useProfile();
   const [factorId, setFactorId] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [verifying, setVerifying] = useState(false);
-  const [role, setRole] = useState<string>("aluno");
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate("/"); return; }
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-      setRole(profile?.role || "aluno");
+      if (!profile) return;
 
       const { data: factors } = await supabase.auth.mfa.listFactors();
       const verified = factors?.totp?.find(f => f.status === "verified");
@@ -46,7 +44,7 @@ export default function MfaChallenge() {
       toast({ title: "Código inválido", description: vErr.message, variant: "destructive" });
       setVerifying(false); return;
     }
-    navigate(`/${role}`);
+    navigate(`/${profile?.role || 'aluno'}`);
   };
 
   return (

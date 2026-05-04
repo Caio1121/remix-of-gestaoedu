@@ -5,7 +5,7 @@
 export { useProfile, useAllStudents, useAllTeachers } from './useProfile';
 export { useManagerData, useRevenueData, useCoursePerformance } from './useManagerData';
 export { useTeacherClasses, useClassStudents } from './useTeacherData';
-export { useGrades, useFinancial, useAttendance, useMaterials } from './useStudentData';
+export { useGrades, useFinancial, useAttendance, useMaterials, useStudentEnrollments } from './useStudentData';
 export { useAnnouncements, useCreateAnnouncement } from './useAnnouncements';
 export { useCreateClass, useCreateUser, useUploadMaterial, useUpsertGrades } from './useClassActions';
 export { useGeneratePayment } from './usePayment';

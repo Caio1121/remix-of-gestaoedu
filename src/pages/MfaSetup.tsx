@@ -6,25 +6,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Shield, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useProfile } from "@/hooks/useProfile";
 
 export default function MfaSetup() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { data: profile } = useProfile();
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
   const [factorId, setFactorId] = useState<string | null>(null);
   const [qr, setQr] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
   const [code, setCode] = useState("");
-  const [role, setRole] = useState<string>("aluno");
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate("/"); return; }
-
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-      setRole(profile?.role || "aluno");
+      if (!profile) return;
 
       // Remove qualquer fator não verificado (de tentativas anteriores)
       const { data: factors } = await supabase.auth.mfa.listFactors();
@@ -62,7 +59,7 @@ export default function MfaSetup() {
       setEnrolling(false); return;
     }
     toast({ title: "2FA ativado!", description: "Sua conta agora está protegida." });
-    navigate(`/${role}`);
+    navigate(`/${profile?.role || 'aluno'}`);
   };
 
   if (loading) {
@@ -78,7 +75,7 @@ export default function MfaSetup() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">Configurar 2FA</h1>
-            <p className="text-sm text-muted-foreground">Obrigatório para {role === "gestor" ? "gestores" : "docentes"}</p>
+            <p className="text-sm text-muted-foreground">Obrigatório para {profile?.role === "gestor" ? "gestores" : "docentes"}</p>
           </div>
         </div>
 

@@ -4,11 +4,9 @@ import {
   LayoutDashboard, BookOpen, DollarSign, CalendarCheck, Calendar,
   FileText, Upload, CreditCard, Bell
 } from "lucide-react";
-import { useFinancial, useMaterials, useAttendance, useGrades } from "@/hooks/useStudentData";
+import { useFinancial, useMaterials, useAttendance, useGrades, useStudentEnrollments } from "@/hooks/useStudentData";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
 import { useProfile } from "@/hooks/useProfile";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { StudentHome } from "@/components/student/StudentHome";
 import { StudentGrades } from "@/components/student/StudentGrades";
 import { StudentFinancial } from "@/components/student/StudentFinancial";
@@ -41,21 +39,8 @@ export default function StudentDashboard() {
   const { data: attendanceRecords } = useAttendance(profile?.id);
 
   // Busca turmas do aluno para os materiais
-  const { data: enrollments } = useQuery({
-    queryKey: ["student-enrollments", profile?.id],
-    queryFn: async () => {
-      if (!profile?.id) return [];
-      const { data, error } = await supabase
-        .from("enrollments")
-        .select("class_id, enrolled_at, classes(name, period)")
-        .eq("student_id", profile.id);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!profile?.id
-  });
-
-  const studentClassId = enrollments?.[0]?.class_id;
+  const { data: enrollments } = useStudentEnrollments(profile?.id);
+  const studentClassId = enrollments?.[0]?.classid;
   const { data: materials, isLoading: materialsLoading } = useMaterials(studentClassId as string);
 
   if (profileLoading || materialsLoading) {
@@ -70,16 +55,16 @@ export default function StudentDashboard() {
   const firstEnrollment = enrollments?.[0] as any;
   const className = firstEnrollment?.classes?.name || "Sem turma";
   const classPeriod = firstEnrollment?.classes?.period || "";
-  const enrollmentDate = firstEnrollment?.enrolled_at
-    ? new Date(firstEnrollment.enrolled_at).toLocaleDateString("pt-BR")
+  const enrollmentDate = firstEnrollment?.enrolledat
+    ? new Date(firstEnrollment.enrolledat).toLocaleDateString("pt-BR")
     : "";
 
   const studentData = {
     id: profile?.id || "",
-    name: profile?.full_name || "Estudante",
-    matricula: profile?.student_card_id || "Não informada",
+    name: profile?.fullname || "Estudante",
+    matricula: profile?.studentcardid || "Não informada",
     email: profile?.role || "Aluno",
-    avatarInitials: profile?.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "AL",
+    avatarInitials: profile?.fullname?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "AL",
     course: classPeriod || "Período não definido",
     class: className,
     phone: "",

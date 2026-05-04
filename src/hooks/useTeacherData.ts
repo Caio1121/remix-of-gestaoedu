@@ -14,7 +14,7 @@ export const useTeacherClasses = (teacherId?: string) =>
       if (!teacherId) return [];
       const { data, error } = await supabase
         .from('classes')
-        .select('*')
+        .select('id, name, period, subject, schedule, room')
         .eq('teacherid', teacherId);
       if (error) throw error;
       return data;
@@ -50,7 +50,7 @@ export const useClassStudents = (classId?: string) =>
           .eq('classid', classId),
         supabase
           .from('attendance')
-          .select('*')
+          .select('id, studentid, date, status')
           .eq('classid', classId),
       ]);
 
@@ -58,12 +58,23 @@ export const useClassStudents = (classId?: string) =>
       if (gradesError) throw gradesError;
       if (attError) throw attError;
 
+      // O(n) Optimization: Index data by studentId
+      const gradeByStudent = new Map((grades ?? []).map((g: any) => [g.studentid, g]));
+      
+      const attByStudent = new Map<string, any[]>();
+      (attendance ?? []).forEach((a: any) => {
+        if (!attByStudent.has(a.studentid)) attByStudent.set(a.studentid, []);
+        attByStudent.get(a.studentid)!.push(a);
+      });
+
+      const toNum = (v: any): number | null =>
+        v !== null && v !== undefined ? Number(v) : null;
+
       return (enrolls ?? []).map((d: any) => {
         const studentId = d.profiles.id;
-        const sg = (grades as any[]).find((g) => g.studentid === studentId);
-        const toNum = (v: any): number | null =>
-          v !== null && v !== undefined ? Number(v) : null;
-        const studentAtts = (attendance ?? []).filter((a: any) => a.studentid === studentId);
+        const sg = gradeByStudent.get(studentId);
+        const studentAtts = attByStudent.get(studentId) ?? [];
+        
         const presencePct =
           studentAtts.length > 0
             ? (studentAtts.filter((a: any) => a.status === 'presente').length /

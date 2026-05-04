@@ -33,7 +33,7 @@ export const useFinancial = (studentId?: string) =>
       if (!studentId) return [];
       const { data, error } = await supabase
         .from('financialrecords')
-        .select('*')
+        .select('id, amount, ispaid, duedate, invoiceurl')
         .eq('studentid', studentId)
         .order('duedate', { ascending: false });
       if (error) throw error;
@@ -55,7 +55,7 @@ export const useAttendance = (studentId?: string) =>
       if (!studentId) return [];
       const { data, error } = await supabase
         .from('attendance')
-        .select('*')
+        .select('id, date, status, classid')
         .eq('studentid', studentId)
         .order('date', { ascending: false });
       if (error) throw error;
@@ -83,4 +83,23 @@ export const useMaterials = (classId?: string) =>
       return data;
     },
     enabled: !!classId,
+  });
+
+/**
+ * Retorna as matrículas do aluno, incluindo os dados das turmas vinculadas.
+ * @param studentId - UUID do aluno
+ */
+export const useStudentEnrollments = (studentId?: string) =>
+  useQuery({
+    queryKey: ['student-enrollments', studentId],
+    queryFn: async () => {
+      if (!studentId) return [];
+      const { data, error } = await supabase
+        .from('enrollments')
+        .select('classid, enrolledat, classes(name, period)')
+        .eq('studentid', studentId);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!studentId,
   });

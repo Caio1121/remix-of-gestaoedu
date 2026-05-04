@@ -15,12 +15,13 @@ export const useProfile = () =>
       if (!user) return null;
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, fullname, role, studentcardid, cpf')
         .eq('id', user.id)
         .single();
       if (error) throw error;
       return data;
     },
+    staleTime: 10 * 60 * 1000,
   });
 
 /**
@@ -33,7 +34,7 @@ export const useAllStudents = () =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, fullname, role, studentcardid, cpf')
         .eq('role', 'aluno')
         .order('fullname');
       if (error) throw error;
@@ -51,7 +52,7 @@ export const useAllTeachers = () =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, fullname, role, studentcardid, cpf')
         .eq('role', 'docente')
         .order('fullname');
       if (error) throw error;

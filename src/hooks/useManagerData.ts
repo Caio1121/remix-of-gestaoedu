@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { PASSING_GRADE } from '@/types';
 
 export interface ManagerKPI {
   totalStudents: number;
@@ -40,7 +41,7 @@ export const useManagerData = () =>
         supabase.from('attendance').select('*', { count: 'exact', head: true }),
         supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('status', 'presente'),
         supabase.from('grades').select('*', { count: 'exact', head: true }),
-        supabase.from('grades').select('*', { count: 'exact', head: true }).gte('gradevalue', 7),
+        supabase.from('grades').select('*', { count: 'exact', head: true }).gte('gradevalue', PASSING_GRADE),
         supabase.from('financialrecords').select('amount, ispaid'),
       ]);
 
@@ -72,6 +73,7 @@ export const useManagerData = () =>
         absenteeismRate: Math.round(100 - attRate),
       };
     },
+    staleTime: 5 * 60 * 1000, // 5 minutos
   });
 
 /**

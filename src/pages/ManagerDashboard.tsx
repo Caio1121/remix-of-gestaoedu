@@ -42,10 +42,10 @@ export default function ManagerDashboard() {
 
   const managerData = {
     id: profile?.id || "",
-    name: profile?.full_name || "Gestor",
+    name: profile?.fullname || "Gestor",
     role: "Diretor Acadêmico",
     email: profile?.role || "Diretoria",
-    avatarInitials: profile?.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "GS",
+    avatarInitials: profile?.fullname?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "GS",
   };
 
   const renderContent = () => {
