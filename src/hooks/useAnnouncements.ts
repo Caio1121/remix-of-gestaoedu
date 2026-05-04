@@ -1,16 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { UserRole } from '@/types';
+
+const VALID_ROLES = new Set<string>(['aluno', 'docente', 'gestor', 'todos']);
 
 /**
  * Retorna comunicados filtrados pelo papel do usuário.
  * Sempre inclui comunicados com `targetrole = 'todos'`.
  * Se `role` não for passado, retorna todos os comunicados (uso do gestor).
- * @param role - 'aluno' | 'docente' | 'gestor' | undefined
+ * @param role - Papel do usuário para filtro
  */
-export const useAnnouncements = (role?: string) =>
+export const useAnnouncements = (role?: UserRole | 'todos') =>
   useQuery({
     queryKey: ['announcements', role],
     queryFn: async () => {
+      if (role !== undefined && !VALID_ROLES.has(role)) {
+        throw new Error(`useAnnouncements: role inválido "${role}"`);
+      }
+
       let query = supabase
         .from('announcements')
         .select('*')

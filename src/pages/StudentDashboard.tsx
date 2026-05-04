@@ -4,9 +4,9 @@ import {
   LayoutDashboard, BookOpen, DollarSign, CalendarCheck, Calendar,
   FileText, Upload, CreditCard, Bell
 } from "lucide-react";
-import { useFinancial, useAnnouncements, useMaterials, useAttendance } from "@/hooks/useDashboardData";
+import { useFinancial, useMaterials, useAttendance, useGrades } from "@/hooks/useStudentData";
+import { useAnnouncements } from "@/hooks/useAnnouncements";
 import { useProfile } from "@/hooks/useProfile";
-import { useGrades } from "@/hooks/useGrades";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { StudentHome } from "@/components/student/StudentHome";

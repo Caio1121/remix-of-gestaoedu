@@ -12,7 +12,7 @@ interface ClassFormState {
 
 const INITIAL_STATE: ClassFormState = {
   name: '',
-  period: '2025.1',
+  period: '',
   subject: '',
   schedule: '',
   room: '',
@@ -43,11 +43,11 @@ export function useCreateClassForm(onSuccess: () => void) {
       toast({ title: 'Sucesso!', description: 'Nova turma criada com sucesso.' });
       reset();
       onSuccess();
-    } catch {
+    } catch (err: any) {
       toast({
         variant: 'destructive',
-        title: 'Erro',
-        description: 'Não foi possível criar a turma.',
+        title: 'Erro ao criar turma',
+        description: err instanceof Error ? err.message : 'Erro desconhecido ao tentar salvar os dados.',
       });
     }
   };

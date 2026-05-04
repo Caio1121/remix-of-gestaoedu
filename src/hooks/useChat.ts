@@ -1,32 +1,42 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 
 export const useChatMessages = (receiverId: string | null) => {
   const queryClient = useQueryClient()
+  const userIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!receiverId) return
-    let currentUserId: string | null = null
+    let activeChannel: any = null
+
     supabase.auth.getUser().then(({ data: { user } }) => {
-      currentUserId = user?.id ?? null
-    })
-    const channel = supabase
-      .channel(`chat-${receiverId}`)
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'chat_messages' },
-        (payload: any) => {
-          const msg = payload.new
-          const isRelevant =
-            (msg.sender_id === currentUserId && msg.receiver_id === receiverId) ||
-            (msg.sender_id === receiverId && msg.receiver_id === currentUserId)
-          if (isRelevant) {
-            queryClient.invalidateQueries({ queryKey: ['chat', receiverId] })
+      if (!user) return
+      userIdRef.current = user.id
+
+      activeChannel = supabase
+        .channel(`chat-${receiverId}`)
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'chat_messages' },
+          (payload: any) => {
+            const msg = payload.new
+            const isRelevant =
+              (msg.sender_id === userIdRef.current && msg.receiver_id === receiverId) ||
+              (msg.sender_id === receiverId && msg.receiver_id === userIdRef.current)
+            
+            if (isRelevant) {
+              queryClient.invalidateQueries({ queryKey: ['chat', receiverId] })
+            }
           }
-        }
-      )
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
+        )
+        .subscribe()
+    })
+
+    return () => { 
+      if (activeChannel) {
+        supabase.removeChannel(activeChannel) 
+      }
+    }
   }, [receiverId, queryClient])
 
   return useQuery({

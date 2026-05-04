@@ -28,24 +28,28 @@ export const useManagerData = () =>
         { count: studentsCount },
         { count: teachersCount },
         { count: classesCount },
-        { data: attData },
-        { data: gradeData },
+        { count: attTotal },
+        { count: attPresent },
+        { count: gradeTotal },
+        { count: gradeApproved },
         { data: finData },
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'aluno'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'docente'),
         supabase.from('classes').select('*', { count: 'exact', head: true }),
-        supabase.from('attendance').select('status'),
-        supabase.from('grades').select('gradevalue'),
+        supabase.from('attendance').select('*', { count: 'exact', head: true }),
+        supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('status', 'presente'),
+        supabase.from('grades').select('*', { count: 'exact', head: true }),
+        supabase.from('grades').select('*', { count: 'exact', head: true }).gte('gradevalue', 7),
         supabase.from('financialrecords').select('amount, ispaid'),
       ]);
 
-      const attRate = attData && attData.length > 0
-        ? (attData.filter((a: any) => a.status === 'presente').length / attData.length) * 100
+      const attRate = attTotal && attTotal > 0
+        ? (Number(attPresent) / Number(attTotal)) * 100
         : 0;
 
-      const appRate = gradeData && gradeData.length > 0
-        ? (gradeData.filter((g: any) => Number(g.gradevalue) >= 7).length / gradeData.length) * 100
+      const appRate = gradeTotal && gradeTotal > 0
+        ? (Number(gradeApproved) / Number(gradeTotal)) * 100
         : 0;
 
       let revMonth = 0;
