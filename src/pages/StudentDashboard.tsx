@@ -15,6 +15,7 @@ import { StudentMaterials } from "@/components/student/StudentMaterials";
 import { StudentDocuments } from "@/components/student/StudentDocuments";
 import { StudentIDCard } from "@/components/student/StudentIDCard";
 import { StudentNotices } from "@/components/student/StudentNotices";
+import { StudentCalendar } from "@/components/student/StudentCalendar";
 import { AdminChat } from "../components/chat/AdminChat";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -92,6 +93,7 @@ export default function StudentDashboard() {
       case "materials": return <StudentMaterials materials={(materials || []) as any} />;
       case "documents": return <StudentDocuments />;
       case "notices": return <StudentNotices notices={(notices || []) as any} />;
+      case "calendar": return <StudentCalendar financial={(payments || []) as any} attendance={(attendanceData || []) as any} />;
       case "idcard": return <StudentIDCard student={studentData} />;
       case "chat": return <div className="p-4 max-w-2xl mx-auto"><AdminChat /></div>;
       default: return <StudentHome student={studentData} grades={(grades || []) as any} payments={(payments || []) as any} notices={(notices || []) as any} attendanceRate={studentAttendanceRate} onNavigate={setActiveItem} />;

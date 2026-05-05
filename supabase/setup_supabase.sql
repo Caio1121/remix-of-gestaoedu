@@ -22,6 +22,7 @@ DROP TABLE IF EXISTS public.audit_log CASCADE;
 DROP TABLE IF EXISTS public.chat_messages CASCADE;
 DROP TABLE IF EXISTS public.announcements CASCADE;
 DROP TABLE IF EXISTS public.financialrecords CASCADE;
+DROP TABLE IF EXISTS public.student_documents CASCADE;
 DROP TABLE IF EXISTS public.attendance CASCADE;
 DROP TABLE IF EXISTS public.grades CASCADE;
 DROP TABLE IF EXISTS public.materials CASCADE;
@@ -108,6 +109,17 @@ CREATE TABLE public.financialrecords (
     updatedby   UUID REFERENCES public.profiles(id)
 );
 
+CREATE TABLE public.student_documents (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    studentid UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    doctype TEXT NOT NULL,
+    filesize TEXT,
+    fileurl TEXT,
+    status TEXT DEFAULT 'enviado',
+    createdat TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
+);
+
 CREATE TABLE public.announcements (
     id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     title       TEXT NOT NULL,
@@ -170,6 +182,7 @@ ALTER TABLE public.financialrecords ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.materials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.student_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
 
 -- =============================================================
@@ -239,6 +252,15 @@ CREATE POLICY "Gestores gerenciam financeiro" ON public.financialrecords
         EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'gestor')
     );
 
+-- STUDENT DOCUMENTS
+CREATE POLICY "Alunos gerenciam seus docs" ON public.student_documents
+    FOR ALL TO authenticated USING (auth.uid() = studentid) WITH CHECK (auth.uid() = studentid);
+
+CREATE POLICY "Gestores veem todos docs" ON public.student_documents
+    FOR SELECT TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'gestor')
+    );
+
 -- CHAT
 CREATE POLICY "Usuários veem suas mensagens" ON public.chat_messages
     FOR SELECT TO authenticated USING (auth.uid() = senderid OR auth.uid() = receiverid);
@@ -285,6 +307,7 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_receiver ON public.chat_messages(re
 CREATE INDEX IF NOT EXISTS idx_grades_student ON public.grades(studentid);
 CREATE INDEX IF NOT EXISTS idx_financial_records_student ON public.financialrecords(studentid, duedate DESC);
 CREATE INDEX IF NOT EXISTS idx_materials_class ON public.materials(classid);
+CREATE INDEX IF NOT EXISTS idx_student_documents_student ON public.student_documents(studentid);
 CREATE INDEX IF NOT EXISTS idx_announcements_targetrole ON public.announcements(targetrole);
 CREATE INDEX IF NOT EXISTS idx_audit_log_record ON public.audit_log(tablename, recordid, changedat DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_log_actor ON public.audit_log(changedby, changedat DESC);

@@ -3,7 +3,7 @@ import { Upload, File, Trash2, Loader2, Download } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 const docTypes = [
   "RG / CNH",
@@ -29,7 +29,6 @@ function formatFileSize(bytes: number): string {
 
 export function StudentDocuments() {
   const { data: profile } = useProfile();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedType, setSelectedType] = useState(docTypes[0]);
@@ -42,8 +41,8 @@ export function StudentDocuments() {
       const { data, error } = await supabase
         .from("student_documents")
         .select("*")
-        .eq("student_id", profile.id)
-        .order("created_at", { ascending: false });
+        .eq("studentid", profile.id)
+        .order("createdat", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -76,11 +75,11 @@ export function StudentDocuments() {
 
       // 3. Insert record in DB
       const { error: dbError } = await supabase.from("student_documents").insert({
-        student_id: profile.id,
+        studentid: profile.id,
         name: file.name,
-        doc_type: selectedType,
-        file_size: formatFileSize(file.size),
-        file_url: storagePath,
+        doctype: selectedType,
+        filesize: formatFileSize(file.size),
+        fileurl: storagePath,
         status: "enviado",
       });
       if (dbError) {
@@ -91,25 +90,25 @@ export function StudentDocuments() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["student-documents"] });
-      toast({ title: "Documento enviado!", description: "Arquivo carregado com sucesso." });
+      toast.success("Documento enviado!", { description: "Arquivo carregado com sucesso." });
     },
     onError: (err: Error) => {
-      toast({ title: "Erro no upload", description: err.message, variant: "destructive" });
+      toast.error("Erro no upload", { description: err.message });
     },
   });
 
   const deleteDoc = useMutation({
-    mutationFn: async (doc: { id: string; file_url: string | null }) => {
+    mutationFn: async (doc: { id: string; fileurl: string | null }) => {
       // Delete from storage if path exists
-      if (doc.file_url) {
-        await supabase.storage.from("student-documents").remove([doc.file_url]);
+      if (doc.fileurl) {
+        await supabase.storage.from("student-documents").remove([doc.fileurl]);
       }
       const { error } = await supabase.from("student_documents").delete().eq("id", doc.id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["student-documents"] });
-      toast({ title: "Documento removido" });
+      toast.success("Documento removido");
     },
   });
 
@@ -120,7 +119,7 @@ export function StudentDocuments() {
     if (data?.signedUrl) {
       window.open(data.signedUrl, "_blank");
     } else {
-      toast({ title: "Erro ao gerar link", variant: "destructive" });
+      toast.error("Erro ao gerar link");
     }
   };
 
@@ -201,15 +200,15 @@ export function StudentDocuments() {
                     <div>
                       <div className="text-sm font-medium text-foreground">{doc.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {doc.doc_type} · {doc.file_size || "–"} · {new Date(doc.created_at).toLocaleDateString("pt-BR")}
+                        {doc.doctype} · {doc.filesize || "–"} · {new Date(doc.createdat).toLocaleDateString("pt-BR")}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${cfg.cls}`}>{cfg.label}</span>
-                    {doc.file_url && (
+                    {doc.fileurl && (
                       <button
-                        onClick={() => handleDownload(doc.file_url, doc.name)}
+                        onClick={() => handleDownload(doc.fileurl, doc.name)}
                         className="text-muted-foreground hover:text-primary transition-colors"
                         title="Baixar"
                       >
@@ -217,7 +216,7 @@ export function StudentDocuments() {
                       </button>
                     )}
                     <button
-                      onClick={() => deleteDoc.mutate({ id: doc.id, file_url: doc.file_url })}
+                      onClick={() => deleteDoc.mutate({ id: doc.id, fileurl: doc.fileurl })}
                       className="text-muted-foreground hover:text-destructive transition-colors"
                       title="Excluir"
                     >

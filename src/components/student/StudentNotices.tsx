@@ -48,7 +48,7 @@ export function StudentNotices({ notices }: Props) {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{n.content}</p>
-                  <p className="text-xs text-muted-foreground/60 mt-2">{n.date || (n.created_at ? new Date(n.created_at).toLocaleDateString('pt-BR') : '')}</p>
+                  <p className="text-xs text-muted-foreground/60 mt-2">{n.date || (n.createdat ? new Date(n.createdat).toLocaleDateString('pt-BR') : '')}</p>
                 </div>
               </div>
             </div>

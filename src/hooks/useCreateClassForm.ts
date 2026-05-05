@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useCreateClass } from '@/hooks/useClassActions';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "sonner";
 
 interface ClassFormState {
   name: string;
@@ -21,7 +21,6 @@ const INITIAL_STATE: ClassFormState = {
 export function useCreateClassForm(onSuccess: () => void) {
   const [form, setForm] = useState<ClassFormState>(INITIAL_STATE);
   const createClassMutation = useCreateClass();
-  const { toast } = useToast();
 
   const setField =
     (field: keyof ClassFormState) =>
@@ -40,13 +39,11 @@ export function useCreateClassForm(onSuccess: () => void) {
         schedule: form.schedule,
         room: form.room,
       });
-      toast({ title: 'Sucesso!', description: 'Nova turma criada com sucesso.' });
+      toast.success('Sucesso!', { description: 'Nova turma criada com sucesso.' });
       reset();
       onSuccess();
     } catch (err: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro ao criar turma',
+      toast.error('Erro ao criar turma', {
         description: err instanceof Error ? err.message : 'Erro desconhecido ao tentar salvar os dados.',
       });
     }

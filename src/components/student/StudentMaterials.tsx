@@ -13,7 +13,7 @@ const typeConfig = {
 export function StudentMaterials({ materials }: Props) {
   const [selectedType, setSelectedType] = useState<string>("all");
 
-  const filtered = selectedType === "all" ? materials : materials.filter(m => m.material_type === selectedType);
+  const filtered = selectedType === "all" ? materials : materials.filter(m => m.materialtype === selectedType);
 
   return (
     <div className="space-y-6">
@@ -38,7 +38,7 @@ export function StudentMaterials({ materials }: Props) {
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.length === 0 ? <div className="col-span-full py-20 text-center text-muted-foreground">Nenhum material encontrado.</div> :
           filtered.map((m) => {
-            const cfg = typeConfig[m.material_type as keyof typeof typeConfig] || typeConfig.link;
+            const cfg = typeConfig[m.materialtype as keyof typeof typeConfig] || typeConfig.link;
             const Icon = cfg.icon;
             return (
               <div key={m.id} className="bg-card shadow-card rounded-xl p-4 flex flex-col gap-3 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
@@ -53,15 +53,15 @@ export function StudentMaterials({ materials }: Props) {
                   <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{m.description || "Sem descrição"}</div>
                 </div>
                 <div className="flex items-center justify-between mt-auto pt-2 border-t border-border">
-                  <span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString()}</span>
+                  <span className="text-xs text-muted-foreground">{new Date(m.createdat).toLocaleDateString()}</span>
                   <a
-                    href={m.content_url}
+                    href={m.contenturl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-primary font-medium hover:underline flex items-center gap-1"
                   >
-                    {m.material_type === "link" || m.material_type === "video" ? <ExternalLink className="w-3 h-3" /> : <Download className="w-3 h-3" />}
-                    {m.material_type === "link" || m.material_type === "video" ? "Abrir" : "Baixar"}
+                    {m.materialtype === "link" || m.materialtype === "video" ? <ExternalLink className="w-3 h-3" /> : <Download className="w-3 h-3" />}
+                    {m.materialtype === "link" || m.materialtype === "video" ? "Abrir" : "Baixar"}
                   </a>
                 </div>
               </div>

@@ -1,5 +1,6 @@
 -- =============================================================
--- SCRIPT SQL CONSOLIDADO - EDUFLOW SYSTEM (v3.3 - PRODUCTION SAFE)
+-- SCRIPT SQL CONSOLIDADO - EDUFLOW SYSTEM (V5 - PRODUCTION SAFE)
+-- Nomes de colunas sem underscores (padronização V5)
 -- =============================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -15,442 +16,306 @@ BEGIN
 END $$;
 
 -- =============================================================
--- 2. TABELAS
+-- 2. DROP TABLES (ordem inversa de dependência)
 -- =============================================================
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id              UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
-  full_name       TEXT,
-  role            user_role DEFAULT 'aluno',
-  student_card_id TEXT UNIQUE,
-  cpf             TEXT,
-  created_at      TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
-ALTER TABLE public.profiles ALTER COLUMN full_name DROP NOT NULL;
-
-CREATE TABLE IF NOT EXISTS public.classes (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name       TEXT NOT NULL,
-  period     TEXT NOT NULL,
-  teacher_id UUID REFERENCES public.profiles(id),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
-);
-
-CREATE TABLE IF NOT EXISTS public.enrollments (
-  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  student_id  UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  class_id    UUID REFERENCES public.classes(id) ON DELETE CASCADE,
-  enrolled_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
-  UNIQUE(student_id, class_id)
-);
-
-CREATE TABLE IF NOT EXISTS public.materials (
-  id            UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  class_id      UUID REFERENCES public.classes(id) ON DELETE CASCADE,
-  title         TEXT NOT NULL,
-  description   TEXT,
-  content_url   TEXT,
-  material_type TEXT DEFAULT 'document',
-  created_at    TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
-);
-
-CREATE TABLE IF NOT EXISTS public.grades (
-  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  student_id  UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  class_id    UUID REFERENCES public.classes(id) ON DELETE CASCADE,
-  grade_value DECIMAL(4,2),
-  feedback    TEXT,
-  updated_at  TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
-);
-
-CREATE TABLE IF NOT EXISTS public.attendance (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  student_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  class_id   UUID REFERENCES public.classes(id) ON DELETE CASCADE,
-  date       DATE DEFAULT CURRENT_DATE,
-  is_present BOOLEAN DEFAULT true
-);
-
-CREATE TABLE IF NOT EXISTS public.financial_records (
-  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  student_id  UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  invoice_url TEXT NOT NULL,
-  amount      DECIMAL(10,2) DEFAULT 0.00,
-  due_date    DATE NOT NULL,
-  is_paid     BOOLEAN DEFAULT false,
-  created_at  TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
-);
-
-CREATE TABLE IF NOT EXISTS public.announcements (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  title      TEXT NOT NULL,
-  content    TEXT NOT NULL,
-  category   TEXT DEFAULT 'geral',
-  priority   TEXT DEFAULT 'media',
-  author_id  UUID REFERENCES public.profiles(id),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS public.chat_messages (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  sender_id   UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  receiver_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  content     TEXT NOT NULL,
-  created_at  TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS public.audit_log (
-  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  table_name TEXT NOT NULL,
-  record_id  UUID NOT NULL,
-  action     TEXT NOT NULL CHECK (action IN ('INSERT', 'UPDATE', 'DELETE')),
-  changed_by UUID REFERENCES public.profiles(id),
-  changed_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL,
-  old_data   JSONB,
-  new_data   JSONB
-);
+DROP TABLE IF EXISTS public.audit_log CASCADE;
+DROP TABLE IF EXISTS public.chat_messages CASCADE;
+DROP TABLE IF EXISTS public.announcements CASCADE;
+DROP TABLE IF EXISTS public.financialrecords CASCADE;
+DROP TABLE IF EXISTS public.student_documents CASCADE;
+DROP TABLE IF EXISTS public.attendance CASCADE;
+DROP TABLE IF EXISTS public.grades CASCADE;
+DROP TABLE IF EXISTS public.materials CASCADE;
+DROP TABLE IF EXISTS public.enrollments CASCADE;
+DROP TABLE IF EXISTS public.classes CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
 
 -- =============================================================
--- 3. ALTER TABLE — TODAS AS COLUNAS NOVAS
+-- 3. TABELAS (nomes V5 sem underscores nas colunas)
 -- =============================================================
+CREATE TABLE public.profiles (
+    id              UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+    fullname        TEXT,
+    role            user_role DEFAULT 'aluno',
+    studentcardid   TEXT UNIQUE,
+    cpf             TEXT,
+    createdat       TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
 
--- [PATCH-1a] classes: subject, schedule, room que o frontend usa
-ALTER TABLE public.profiles
-  ADD COLUMN IF NOT EXISTS cpf TEXT;
+CREATE TABLE public.classes (
+    id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name        TEXT NOT NULL,
+    period      TEXT NOT NULL,
+    subject     TEXT,
+    schedule    TEXT,
+    room        TEXT,
+    teacherid   UUID REFERENCES public.profiles(id),
+    createdat   TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
 
-ALTER TABLE public.classes
-  ADD COLUMN IF NOT EXISTS subject  TEXT,
-  ADD COLUMN IF NOT EXISTS schedule TEXT,
-  ADD COLUMN IF NOT EXISTS room     TEXT;
+CREATE TABLE public.enrollments (
+    id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    studentid   UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    classid     UUID REFERENCES public.classes(id) ON DELETE CASCADE,
+    enrolledat  TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    UNIQUE(studentid, classid)
+);
 
-COMMENT ON COLUMN public.profiles.cpf     IS 'CPF do usuário para integração financeira';
-COMMENT ON COLUMN public.classes.subject  IS 'Matéria/disciplina da turma';
-COMMENT ON COLUMN public.classes.schedule IS 'Horário das aulas (ex: Seg/Qua 19h–21h)';
-COMMENT ON COLUMN public.classes.room     IS 'Sala física ou link remoto';
+CREATE TABLE public.materials (
+    id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    classid         UUID REFERENCES public.classes(id) ON DELETE CASCADE,
+    title           TEXT NOT NULL,
+    description     TEXT,
+    contenturl      TEXT,
+    materialtype    TEXT DEFAULT 'document',
+    createdat       TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
 
--- grades: sub-notas av1, av2, av3
+CREATE TABLE public.grades (
+    id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    studentid   UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    classid     UUID REFERENCES public.classes(id) ON DELETE CASCADE,
+    gradevalue  DECIMAL(4,2),
+    av1         DECIMAL(4,2),
+    av2         DECIMAL(4,2),
+    av3         DECIMAL(4,2),
+    feedback    TEXT,
+    updatedat   TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    updatedby   UUID REFERENCES public.profiles(id),
+    UNIQUE(studentid, classid)
+);
+
+CREATE TABLE public.attendance (
+    id                          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    studentid                   UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    classid                     UUID REFERENCES public.classes(id) ON DELETE CASCADE,
+    date                        DATE DEFAULT CURRENT_DATE,
+    ispresent                   BOOLEAN DEFAULT true,
+    status                      TEXT DEFAULT 'presente',
+    justificationdescription    TEXT,
+    justificationfileurl        TEXT,
+    updatedby                   UUID REFERENCES public.profiles(id)
+);
+
+CREATE TABLE public.financialrecords (
+    id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    studentid   UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    invoiceurl  TEXT NOT NULL,
+    amount      DECIMAL(10,2) DEFAULT 0.00,
+    duedate     DATE NOT NULL,
+    ispaid      BOOLEAN DEFAULT false,
+    createdat   TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    updatedat   TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+    updatedby   UUID REFERENCES public.profiles(id)
+);
+
+CREATE TABLE public.student_documents (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    studentid UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    doctype TEXT NOT NULL,
+    filesize TEXT,
+    fileurl TEXT,
+    status TEXT DEFAULT 'enviado',
+    createdat TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
+);
+
+CREATE TABLE public.announcements (
+    id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    title       TEXT NOT NULL,
+    content     TEXT NOT NULL,
+    category    TEXT DEFAULT 'geral',
+    priority    TEXT DEFAULT 'media',
+    targetrole  TEXT NOT NULL DEFAULT 'todos',
+    authorid    UUID REFERENCES public.profiles(id),
+    createdat   TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE public.chat_messages (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    senderid    UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    receiverid  UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    content     TEXT NOT NULL,
+    createdat   TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE public.audit_log (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tablename   TEXT NOT NULL,
+    recordid    UUID NOT NULL,
+    action      TEXT NOT NULL CHECK (action IN ('INSERT', 'UPDATE', 'DELETE')),
+    changedby   UUID REFERENCES public.profiles(id),
+    changedat   TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL,
+    olddata     JSONB,
+    newdata     JSONB
+);
+
+-- =============================================================
+-- 4. CONSTRAINTS
+-- =============================================================
 ALTER TABLE public.grades
-  ADD COLUMN IF NOT EXISTS av1        DECIMAL(4,2),
-  ADD COLUMN IF NOT EXISTS av2        DECIMAL(4,2),
-  ADD COLUMN IF NOT EXISTS av3        DECIMAL(4,2),
-  ADD COLUMN IF NOT EXISTS updated_by UUID REFERENCES public.profiles(id);
+    ADD CONSTRAINT grades_av1_range CHECK (av1 IS NULL OR (av1 >= 0 AND av1 <= 10)),
+    ADD CONSTRAINT grades_av2_range CHECK (av2 IS NULL OR (av2 >= 0 AND av2 <= 10)),
+    ADD CONSTRAINT grades_av3_range CHECK (av3 IS NULL OR (av3 >= 0 AND av3 <= 10)),
+    ADD CONSTRAINT grades_value_range CHECK (gradevalue IS NULL OR (gradevalue >= 0 AND gradevalue <= 10));
 
--- attendance: colunas de versões antigas
-ALTER TABLE public.attendance
-  ADD COLUMN IF NOT EXISTS status                    TEXT DEFAULT 'presente',
-  ADD COLUMN IF NOT EXISTS justification_description TEXT,
-  ADD COLUMN IF NOT EXISTS justification_file_url    TEXT,
-  ADD COLUMN IF NOT EXISTS updated_by                UUID REFERENCES public.profiles(id);
-
-COMMENT ON COLUMN public.attendance.is_present IS
-  'SOFT DEPRECATED: use a coluna status. Mantido por compatibilidade.';
-
--- financial_records: audit trail
-ALTER TABLE public.financial_records
-  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
-  ADD COLUMN IF NOT EXISTS updated_by UUID REFERENCES public.profiles(id);
-
--- announcements: target_role
 ALTER TABLE public.announcements
-  ADD COLUMN IF NOT EXISTS target_role TEXT NOT NULL DEFAULT 'todos',
-  ADD COLUMN IF NOT EXISTS author_id   UUID REFERENCES public.profiles(id);
+    ADD CONSTRAINT announcements_targetrole_valid
+    CHECK (targetrole IN ('aluno', 'docente', 'gestor', 'todos'));
+
+ALTER TABLE public.attendance
+    ADD CONSTRAINT attendance_status_consistent
+    CHECK (
+        (ispresent = true AND status = 'presente') OR
+        (ispresent = false AND status IN ('ausente', 'justificado'))
+    );
 
 -- =============================================================
--- 4. CORRIGE DADOS INCONSISTENTES
+-- 5. RLS — HABILITAR
 -- =============================================================
-
-UPDATE public.attendance
-SET status = 'ausente'
-WHERE is_present = false AND status = 'presente';
-
-DELETE FROM public.grades
-WHERE id NOT IN (
-  SELECT DISTINCT ON (student_id, class_id) id
-  FROM public.grades
-  ORDER BY student_id, class_id, grade_value DESC NULLS LAST
-);
-
--- =============================================================
--- 5. CONSTRAINTS
--- =============================================================
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'grades_av1_range') THEN
-    ALTER TABLE public.grades ADD CONSTRAINT grades_av1_range
-      CHECK (av1 IS NULL OR (av1 >= 0 AND av1 <= 10));
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'grades_av2_range') THEN
-    ALTER TABLE public.grades ADD CONSTRAINT grades_av2_range
-      CHECK (av2 IS NULL OR (av2 >= 0 AND av2 <= 10));
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'grades_av3_range') THEN
-    ALTER TABLE public.grades ADD CONSTRAINT grades_av3_range
-      CHECK (av3 IS NULL OR (av3 >= 0 AND av3 <= 10));
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'grades_value_range') THEN
-    ALTER TABLE public.grades ADD CONSTRAINT grades_value_range
-      CHECK (grade_value IS NULL OR (grade_value >= 0 AND grade_value <= 10));
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'announcements_target_role_valid') THEN
-    ALTER TABLE public.announcements
-      ADD CONSTRAINT announcements_target_role_valid
-      CHECK (target_role IN ('aluno', 'docente', 'gestor', 'todos'));
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'grades_student_class_unique') THEN
-    ALTER TABLE public.grades
-      ADD CONSTRAINT grades_student_class_unique UNIQUE (student_id, class_id);
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'attendance_status_consistent') THEN
-    ALTER TABLE public.attendance
-      ADD CONSTRAINT attendance_status_consistent CHECK (
-        (is_present = true  AND status = 'presente') OR
-        (is_present = false AND status IN ('ausente', 'justificado'))
-      );
-  END IF;
-END $$;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.enrollments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.grades ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.attendance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.financialrecords ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.materials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.student_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
 
 -- =============================================================
--- 6. RLS — HABILITAR
+-- 6. POLÍTICAS RLS
 -- =============================================================
-
-ALTER TABLE public.profiles          ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.classes           ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.enrollments       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.grades            ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.attendance        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.financial_records ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.announcements     ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.chat_messages     ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.materials         ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.audit_log         ENABLE ROW LEVEL SECURITY;
-
--- =============================================================
--- 7. POLÍTICAS RLS
--- =============================================================
-
 -- PROFILES
-DROP POLICY IF EXISTS "Perfis visíveis por todos" ON public.profiles;
-CREATE POLICY "Perfis visíveis por todos"
-  ON public.profiles FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Perfis visíveis por todos" ON public.profiles
+    FOR SELECT TO authenticated USING (true);
 
-DROP POLICY IF EXISTS "Usuário atualiza próprio perfil" ON public.profiles;
-CREATE POLICY "Usuário atualiza próprio perfil"
-  ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
+CREATE POLICY "Usuário atualiza próprio perfil" ON public.profiles
+    FOR UPDATE TO authenticated USING (auth.uid() = id);
 
-DROP POLICY IF EXISTS "Usuário cria próprio perfil" ON public.profiles;
-CREATE POLICY "Usuário cria próprio perfil"
-  ON public.profiles FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
+CREATE POLICY "Usuário cria próprio perfil" ON public.profiles
+    FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
 
 -- CLASSES
-DROP POLICY IF EXISTS "Turmas visíveis por todos" ON public.classes;
-CREATE POLICY "Turmas visíveis por todos"
-  ON public.classes FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Turmas visíveis por todos" ON public.classes
+    FOR SELECT TO authenticated USING (true);
 
-DROP POLICY IF EXISTS "Professores e Gestores gerenciam turmas" ON public.classes;
-CREATE POLICY "Professores e Gestores gerenciam turmas"
-  ON public.classes FOR ALL TO authenticated USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('docente', 'gestor')
-    )
-  );
+CREATE POLICY "Professores e Gestores gerenciam turmas" ON public.classes
+    FOR ALL TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('docente', 'gestor'))
+    );
 
 -- ENROLLMENTS
-DROP POLICY IF EXISTS "Alunos veem próprias matrículas" ON public.enrollments;
-CREATE POLICY "Alunos veem próprias matrículas"
-  ON public.enrollments FOR SELECT TO authenticated
-  USING (auth.uid() = student_id);
+CREATE POLICY "Alunos veem próprias matrículas" ON public.enrollments
+    FOR SELECT TO authenticated USING (auth.uid() = studentid);
 
-DROP POLICY IF EXISTS "Gestores e Docentes gerenciam matrículas" ON public.enrollments;
-CREATE POLICY "Gestores e Docentes gerenciam matrículas"
-  ON public.enrollments FOR ALL TO authenticated USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('docente', 'gestor')
-    )
-  );
+CREATE POLICY "Gestores e Docentes gerenciam matrículas" ON public.enrollments
+    FOR ALL TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('docente', 'gestor'))
+    );
 
 -- GRADES
-DROP POLICY IF EXISTS "Alunos veem próprias notas" ON public.grades;
-CREATE POLICY "Alunos veem próprias notas"
-  ON public.grades FOR SELECT TO authenticated
-  USING (auth.uid() = student_id);
+CREATE POLICY "Alunos veem próprias notas" ON public.grades
+    FOR SELECT TO authenticated USING (auth.uid() = studentid);
 
-DROP POLICY IF EXISTS "Docentes e Gestores gerenciam notas" ON public.grades;
-CREATE POLICY "Docentes e Gestores gerenciam notas"
-  ON public.grades FOR ALL TO authenticated USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('docente', 'gestor')
-    )
-  );
+CREATE POLICY "Docentes e Gestores gerenciam notas" ON public.grades
+    FOR ALL TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('docente', 'gestor'))
+    );
 
 -- ATTENDANCE
-DROP POLICY IF EXISTS "Alunos veem própria frequência" ON public.attendance;
-CREATE POLICY "Alunos veem própria frequência"
-  ON public.attendance FOR SELECT TO authenticated
-  USING (auth.uid() = student_id);
+CREATE POLICY "Alunos veem própria frequência" ON public.attendance
+    FOR SELECT TO authenticated USING (auth.uid() = studentid);
 
-DROP POLICY IF EXISTS "Docentes e Gestores gerenciam frequência" ON public.attendance;
-CREATE POLICY "Docentes e Gestores gerenciam frequência"
-  ON public.attendance FOR ALL TO authenticated USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('docente', 'gestor')
-    )
-  );
+CREATE POLICY "Docentes e Gestores gerenciam frequência" ON public.attendance
+    FOR ALL TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('docente', 'gestor'))
+    );
 
 -- MATERIALS
-DROP POLICY IF EXISTS "Materiais visíveis por todos autenticados" ON public.materials;
-CREATE POLICY "Materiais visíveis por todos autenticados"
-  ON public.materials FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Materiais visíveis por todos autenticados" ON public.materials
+    FOR SELECT TO authenticated USING (true);
 
-DROP POLICY IF EXISTS "Docentes e Gestores gerenciam materiais" ON public.materials;
-CREATE POLICY "Docentes e Gestores gerenciam materiais"
-  ON public.materials FOR ALL TO authenticated USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('docente', 'gestor')
-    )
-  );
+CREATE POLICY "Docentes e Gestores gerenciam materiais" ON public.materials
+    FOR ALL TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('docente', 'gestor'))
+    );
 
 -- FINANCIAL
-DROP POLICY IF EXISTS "Alunos veem seu financeiro" ON public.financial_records;
-CREATE POLICY "Alunos veem seu financeiro"
-  ON public.financial_records FOR SELECT TO authenticated
-  USING (auth.uid() = student_id);
+CREATE POLICY "Alunos veem seu financeiro" ON public.financialrecords
+    FOR SELECT TO authenticated USING (auth.uid() = studentid);
 
-DROP POLICY IF EXISTS "Gestores gerenciam financeiro" ON public.financial_records;
-CREATE POLICY "Gestores gerenciam financeiro"
-  ON public.financial_records FOR ALL TO authenticated USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'gestor'
-    )
-  );
+CREATE POLICY "Gestores gerenciam financeiro" ON public.financialrecords
+    FOR ALL TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'gestor')
+    );
+
+-- STUDENT DOCUMENTS
+CREATE POLICY "Alunos gerenciam seus docs" ON public.student_documents
+    FOR ALL TO authenticated USING (auth.uid() = studentid) WITH CHECK (auth.uid() = studentid);
+
+CREATE POLICY "Gestores veem todos docs" ON public.student_documents
+    FOR SELECT TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'gestor')
+    );
 
 -- CHAT
-DROP POLICY IF EXISTS "Usuários veem suas mensagens" ON public.chat_messages;
-CREATE POLICY "Usuários veem suas mensagens"
-  ON public.chat_messages FOR SELECT TO authenticated
-  USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+CREATE POLICY "Usuários veem suas mensagens" ON public.chat_messages
+    FOR SELECT TO authenticated USING (auth.uid() = senderid OR auth.uid() = receiverid);
 
-DROP POLICY IF EXISTS "Usuários enviam mensagens" ON public.chat_messages;
-CREATE POLICY "Usuários enviam mensagens"
-  ON public.chat_messages FOR INSERT TO authenticated
-  WITH CHECK (auth.uid() = sender_id);
+CREATE POLICY "Usuários enviam mensagens" ON public.chat_messages
+    FOR INSERT TO authenticated WITH CHECK (auth.uid() = senderid);
 
 -- ANNOUNCEMENTS
-DROP POLICY IF EXISTS "Todos veem avisos"                 ON public.announcements;
-DROP POLICY IF EXISTS "Usuários veem avisos do seu papel" ON public.announcements;
-CREATE POLICY "Usuários veem avisos do seu papel"
-  ON public.announcements FOR SELECT TO authenticated
-  USING (
-    target_role = 'todos'
-    OR target_role = (
-      SELECT role::text FROM public.profiles WHERE id = auth.uid()
-    )
-  );
+CREATE POLICY "Usuários veem avisos do seu papel" ON public.announcements
+    FOR SELECT TO authenticated USING (
+        targetrole = 'todos' OR
+        targetrole = (SELECT role::text FROM public.profiles WHERE id = auth.uid())
+    );
 
-DROP POLICY IF EXISTS "Gestores e Docentes criam avisos" ON public.announcements;
-CREATE POLICY "Gestores e Docentes criam avisos"
-  ON public.announcements FOR INSERT TO authenticated
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('gestor', 'docente')
-    )
-  );
+CREATE POLICY "Gestores e Docentes criam avisos" ON public.announcements
+    FOR INSERT TO authenticated WITH CHECK (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('gestor', 'docente'))
+    );
 
--- [PATCH-1b] UPDATE e DELETE em announcements
-DROP POLICY IF EXISTS "Autores e Gestores editam avisos" ON public.announcements;
-CREATE POLICY "Autores e Gestores editam avisos"
-  ON public.announcements FOR UPDATE TO authenticated
-  USING (
-    auth.uid() = author_id
-    OR EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'gestor'
-    )
-  );
+CREATE POLICY "Autores e Gestores editam avisos" ON public.announcements
+    FOR UPDATE TO authenticated USING (
+        auth.uid() = authorid OR
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'gestor')
+    );
 
-DROP POLICY IF EXISTS "Autores e Gestores deletam avisos" ON public.announcements;
-CREATE POLICY "Autores e Gestores deletam avisos"
-  ON public.announcements FOR DELETE TO authenticated
-  USING (
-    auth.uid() = author_id
-    OR EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'gestor'
-    )
-  );
-
-COMMENT ON COLUMN public.announcements.target_role IS
-  'Público-alvo: aluno | docente | gestor | todos';
+CREATE POLICY "Autores e Gestores deletam avisos" ON public.announcements
+    FOR DELETE TO authenticated USING (
+        auth.uid() = authorid OR
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'gestor')
+    );
 
 -- AUDIT LOG
-DROP POLICY IF EXISTS "Gestores veem audit log" ON public.audit_log;
-CREATE POLICY "Gestores veem audit log"
-  ON public.audit_log FOR SELECT TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'gestor'
-    )
-  );
+CREATE POLICY "Gestores veem audit log" ON public.audit_log
+    FOR SELECT TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'gestor')
+    );
 
 -- =============================================================
--- 8. ÍNDICES DE PERFORMANCE
+-- 7. ÍNDICES DE PERFORMANCE
 -- =============================================================
-
-CREATE INDEX IF NOT EXISTS idx_attendance_student_class_date
-  ON public.attendance(student_id, class_id, date DESC);
-
-CREATE INDEX IF NOT EXISTS idx_chat_messages_sender
-  ON public.chat_messages(sender_id, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_chat_messages_receiver
-  ON public.chat_messages(receiver_id, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_grades_student
-  ON public.grades(student_id);
-
-CREATE INDEX IF NOT EXISTS idx_financial_records_student
-  ON public.financial_records(student_id, due_date DESC);
-
-CREATE INDEX IF NOT EXISTS idx_materials_class
-  ON public.materials(class_id);
-
-CREATE INDEX IF NOT EXISTS idx_announcements_target_role
-  ON public.announcements(target_role);
-
-CREATE INDEX IF NOT EXISTS idx_audit_log_record
-  ON public.audit_log(table_name, record_id, changed_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_audit_log_actor
-  ON public.audit_log(changed_by, changed_at DESC);
-
--- [PATCH-1a] Índice para buscas por matéria
-CREATE INDEX IF NOT EXISTS idx_classes_subject
-  ON public.classes(subject);
+CREATE INDEX IF NOT EXISTS idx_attendance_student_class_date ON public.attendance(studentid, classid, date DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_sender ON public.chat_messages(senderid, createdat DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_receiver ON public.chat_messages(receiverid, createdat DESC);
+CREATE INDEX IF NOT EXISTS idx_grades_student ON public.grades(studentid);
+CREATE INDEX IF NOT EXISTS idx_financial_records_student ON public.financialrecords(studentid, duedate DESC);
+CREATE INDEX IF NOT EXISTS idx_materials_class ON public.materials(classid);
+CREATE INDEX IF NOT EXISTS idx_student_documents_student ON public.student_documents(studentid);
+CREATE INDEX IF NOT EXISTS idx_announcements_targetrole ON public.announcements(targetrole);
+CREATE INDEX IF NOT EXISTS idx_audit_log_record ON public.audit_log(tablename, recordid, changedat DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_log_actor ON public.audit_log(changedby, changedat DESC);
+CREATE INDEX IF NOT EXISTS idx_classes_subject ON public.classes(subject);
 
 -- =============================================================
--- 9. AUTOMAÇÃO DE PERFIL
+-- 8. AUTOMAÇÃO DE PERFIL
 -- =============================================================
-
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -458,149 +323,133 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_role public.user_role;
+    v_role public.user_role;
 BEGIN
-  BEGIN
-    v_role := COALESCE(
-      (new.raw_user_meta_data->>'role')::public.user_role,
-      'aluno'::public.user_role
-    );
-  EXCEPTION WHEN OTHERS THEN
-    v_role := 'aluno'::public.user_role;
-  END;
+    BEGIN
+        v_role := COALESCE(
+            (new.raw_user_meta_data->>'role')::public.user_role,
+            'aluno'::public.user_role
+        );
+    EXCEPTION WHEN OTHERS THEN
+        v_role := 'aluno'::public.user_role;
+    END;
 
-  INSERT INTO public.profiles (id, full_name, role)
-  VALUES (
-    new.id,
-    COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
-    v_role
-  )
-  ON CONFLICT (id) DO NOTHING;
-
-  RETURN new;
+    INSERT INTO public.profiles (id, fullname, role)
+    VALUES (
+        new.id,
+        COALESCE(new.raw_user_meta_data->>'fullname', new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+        v_role
+    )
+    ON CONFLICT (id) DO NOTHING;
+    RETURN new;
 EXCEPTION WHEN OTHERS THEN
-  RAISE LOG 'handle_new_user failed for %: % %', new.id, SQLERRM, SQLSTATE;
-  RETURN new;
+    RAISE LOG 'handle_new_user failed for %: % %', new.id, SQLERRM, SQLSTATE;
+    RETURN new;
 END;
 $$;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- =============================================================
--- 10. REALTIME
+-- 9. REALTIME
 -- =============================================================
-
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
-    CREATE PUBLICATION supabase_realtime;
-  END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+        CREATE PUBLICATION supabase_realtime;
+    END IF;
 END $$;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_publication_tables
-    WHERE pubname = 'supabase_realtime'
-      AND schemaname = 'public'
-      AND tablename = 'chat_messages'
-  ) THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;
-  END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables
+        WHERE pubname = 'supabase_realtime'
+        AND schemaname = 'public'
+        AND tablename = 'chat_messages'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;
+    END IF;
 END $$;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_publication_tables
-    WHERE pubname = 'supabase_realtime'
-      AND schemaname = 'public'
-      AND tablename = 'announcements'
-  ) THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.announcements;
-  END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables
+        WHERE pubname = 'supabase_realtime'
+        AND schemaname = 'public'
+        AND tablename = 'announcements'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.announcements;
+    END IF;
 END $$;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_publication_tables
-    WHERE pubname = 'supabase_realtime'
-      AND schemaname = 'public'
-      AND tablename = 'profiles'
-  ) THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
-  END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables
+        WHERE pubname = 'supabase_realtime'
+        AND schemaname = 'public'
+        AND tablename = 'profiles'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
+    END IF;
 END $$;
 
 -- =============================================================
--- 11. STORAGE — BUCKETS E POLÍTICAS
+-- 10. STORAGE — BUCKETS E POLÍTICAS
 -- =============================================================
+INSERT INTO storage.buckets (id, name, public) VALUES ('materials', 'materials', true)
+    ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('materials', 'materials', true)
-ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('student-documents', 'student-documents', false)
+    ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('student-documents', 'student-documents', false)
-ON CONFLICT (id) DO NOTHING;
-
--- materials bucket
 DROP POLICY IF EXISTS "Docentes fazem upload de materiais" ON storage.objects;
-CREATE POLICY "Docentes fazem upload de materiais"
-  ON storage.objects FOR INSERT TO authenticated
-  WITH CHECK (
-    bucket_id = 'materials' AND
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('docente', 'gestor')
-    )
-  );
+CREATE POLICY "Docentes fazem upload de materiais" ON storage.objects
+    FOR INSERT TO authenticated WITH CHECK (
+        bucket_id = 'materials' AND
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('docente', 'gestor'))
+    );
 
 DROP POLICY IF EXISTS "Todos autenticados veem materiais" ON storage.objects;
-CREATE POLICY "Todos autenticados veem materiais"
-  ON storage.objects FOR SELECT TO authenticated
-  USING (bucket_id = 'materials');
+CREATE POLICY "Todos autenticados veem materiais" ON storage.objects
+    FOR SELECT TO authenticated USING (bucket_id = 'materials');
 
 DROP POLICY IF EXISTS "Docentes deletam materiais" ON storage.objects;
-CREATE POLICY "Docentes deletam materiais"
-  ON storage.objects FOR DELETE TO authenticated
-  USING (
-    bucket_id = 'materials' AND
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('docente', 'gestor')
-    )
-  );
+CREATE POLICY "Docentes deletam materiais" ON storage.objects
+    FOR DELETE TO authenticated USING (
+        bucket_id = 'materials' AND
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('docente', 'gestor'))
+    );
 
--- student-documents bucket
 DROP POLICY IF EXISTS "Alunos fazem upload de seus docs" ON storage.objects;
-CREATE POLICY "Alunos fazem upload de seus docs"
-  ON storage.objects FOR INSERT TO authenticated
-  WITH CHECK (
-    bucket_id = 'student-documents' AND
-    (storage.foldername(name))[1] = auth.uid()::text
-  );
+CREATE POLICY "Alunos fazem upload de seus docs" ON storage.objects
+    FOR INSERT TO authenticated WITH CHECK (
+        bucket_id = 'student-documents' AND
+        (storage.foldername(name))[1] = auth.uid()::text
+    );
 
 DROP POLICY IF EXISTS "Alunos veem seus docs" ON storage.objects;
-CREATE POLICY "Alunos veem seus docs"
-  ON storage.objects FOR SELECT TO authenticated
-  USING (
-    bucket_id = 'student-documents' AND
-    (storage.foldername(name))[1] = auth.uid()::text
-  );
+CREATE POLICY "Alunos veem seus docs" ON storage.objects
+    FOR SELECT TO authenticated USING (
+        bucket_id = 'student-documents' AND
+        (storage.foldername(name))[1] = auth.uid()::text
+    );
 
--- student-documents bucket (continuação)
-DROP POLICY IF EXISTS "Gestores veem todos docs no storage"    ON storage.objects;
-CREATE POLICY "Gestores veem todos docs no storage"
-  ON storage.objects FOR SELECT TO authenticated
-  USING (
-    bucket_id = 'student-documents' AND
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'gestor'
-    )
-  );
+DROP POLICY IF EXISTS "Gestores veem todos docs no storage" ON storage.objects;
+CREATE POLICY "Gestores veem todos docs no storage" ON storage.objects
+    FOR SELECT TO authenticated USING (
+        bucket_id = 'student-documents' AND
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'gestor')
+    );
+
+-- =============================================================
+-- FIM DO SCRIPT V5
+-- Tabelas criadas: profiles, classes, enrollments, materials,
+-- grades, attendance, financialrecords, announcements,
+-- chat_messages, audit_log
+-- =============================================================

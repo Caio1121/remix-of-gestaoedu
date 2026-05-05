@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Users, Search, UserCheck, UserX, Plus, X } from "lucide-react";
 import { UserRole } from "@/types";
 import { useCreateUser, useAllStudents, useAllTeachers } from "@/hooks/useDashboardData";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface Props {
   kpis: { totalStudents: number; totalTeachers: number; totalClasses: number };
@@ -19,7 +19,6 @@ export function ManagerUsers({ kpis }: Props) {
   const { data: realStudents = [], isLoading: loadingStudents } = useAllStudents();
   const { data: realTeachers = [], isLoading: loadingTeachers } = useAllTeachers();
   const createUserMutation = useCreateUser();
-  const { toast } = useToast();
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,14 +28,12 @@ export function ManagerUsers({ kpis }: Props) {
         fullname: newUserName,
         role: newUserRole,
       });
-      toast({ title: "Sucesso!", description: "Usuário convidado com sucesso." });
+      toast.success("Sucesso!", { description: "Usuário convidado com sucesso." });
       setIsNewUserModalOpen(false);
       setNewUserName("");
       setNewUserEmail("");
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
+      toast.error("Erro", {
         description: error.message || "Erro ao criar usuário.",
       });
     }

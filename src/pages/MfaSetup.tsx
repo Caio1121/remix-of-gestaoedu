@@ -5,12 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Shield, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useProfile } from "@/hooks/useProfile";
 
 export default function MfaSetup() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { data: profile } = useProfile();
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
@@ -33,7 +32,7 @@ export default function MfaSetup() {
 
       const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: `EduManager ${Date.now()}` });
       if (error) {
-        toast({ title: "Erro ao iniciar 2FA", description: error.message, variant: "destructive" });
+        toast.error("Erro ao iniciar 2FA", { description: error.message });
         setLoading(false);
         return;
       }
@@ -50,15 +49,15 @@ export default function MfaSetup() {
     setEnrolling(true);
     const { data: challenge, error: cErr } = await supabase.auth.mfa.challenge({ factorId });
     if (cErr) {
-      toast({ title: "Erro", description: cErr.message, variant: "destructive" });
+      toast.error("Erro", { description: cErr.message });
       setEnrolling(false); return;
     }
     const { error: vErr } = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code });
     if (vErr) {
-      toast({ title: "Código inválido", description: vErr.message, variant: "destructive" });
+      toast.error("Código inválido", { description: vErr.message });
       setEnrolling(false); return;
     }
-    toast({ title: "2FA ativado!", description: "Sua conta agora está protegida." });
+    toast.success("2FA ativado!", { description: "Sua conta agora está protegida." });
     navigate(`/${profile?.role || 'aluno'}`);
   };
 

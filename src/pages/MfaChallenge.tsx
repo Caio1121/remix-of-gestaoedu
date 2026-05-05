@@ -5,12 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Shield, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useProfile } from "@/hooks/useProfile";
 
 export default function MfaChallenge() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { data: profile } = useProfile();
   const [factorId, setFactorId] = useState<string | null>(null);
   const [code, setCode] = useState("");
@@ -36,12 +35,12 @@ export default function MfaChallenge() {
     setVerifying(true);
     const { data: challenge, error: cErr } = await supabase.auth.mfa.challenge({ factorId });
     if (cErr) {
-      toast({ title: "Erro", description: cErr.message, variant: "destructive" });
+      toast.error("Erro", { description: cErr.message });
       setVerifying(false); return;
     }
     const { error: vErr } = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code });
     if (vErr) {
-      toast({ title: "Código inválido", description: vErr.message, variant: "destructive" });
+      toast.error("Código inválido", { description: vErr.message });
       setVerifying(false); return;
     }
     navigate(`/${profile?.role || 'aluno'}`);

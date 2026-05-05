@@ -10,6 +10,7 @@ import { TeacherClasses } from "@/components/teacher/TeacherClasses";
 import { TeacherGrades } from "@/components/teacher/TeacherGrades";
 import { TeacherAttendance } from "@/components/teacher/TeacherAttendance";
 import { TeacherContent } from "@/components/teacher/TeacherContent";
+import { TeacherReports } from "@/components/teacher/TeacherReports";
 import { AdminChat } from "@/components/chat/AdminChat";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -102,6 +103,7 @@ export default function TeacherDashboard() {
       case "attendance": return <TeacherAttendance students={studentList as any} classes={classList as any} selectedClass={selectedClassId || ""} />;
       case "content": return <TeacherContent />;
       case "chat": return <div className="p-4 max-w-2xl mx-auto"><AdminChat /></div>;
+      case "reports": return <TeacherReports classes={classList as any} />;
       default: return <TeacherHome teacher={teacherData} classes={classList as any} onNavigate={setActiveItem} />;
     }
 
