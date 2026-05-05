@@ -14,7 +14,7 @@
 
 ---
 
-## [ ] PHASE 2 — Consistência de Nomes V5 (PRE-REQUISITO DO BANCO) — CONCLUÍDA (FRONTEND)
+## [x] PHASE 2 — Consistência de Nomes V5 (PRE-REQUISITO DO BANCO) — CONCLUÍDA
 
 Contexto: A V5 padronizou todos os nomes de colunas do banco removendo underscores.
 Os hooks principais já foram atualizados, mas 4 componentes ainda referenciam nomes antigos.
@@ -35,70 +35,58 @@ Regra geral de substituição:
 ### Ordem obrigatória de execução:
 
 - [x] TASK 10 — Corrigir ManagerUsers.tsx
-
-  Arquivo: src/components/manager/ManagerUsers.tsx
-
-  Substituições necessárias:
-  - s.full_name -> s.fullname (render dos alunos)
-  - s.student_card_id -> s.studentcardid (render dos alunos)
-  - t.full_name -> t.fullname (render dos professores)
-  - s.full_name?.toLowerCase() -> s.fullname?.toLowerCase() (filtro de busca alunos)
-  - t.full_name?.toLowerCase() -> t.fullname?.toLowerCase() (filtro de busca professores)
-
-  Verificar: grep no arquivo não deve encontrar nenhum full_name ou student_card_id após a correção.
+Arquivo: src/components/manager/ManagerUsers.tsx
+Substituições necessárias:
+- s.full_name -> s.fullname (render dos alunos)
+- s.student_card_id -> s.studentcardid (render dos alunos)
+- t.full_name -> t.fullname (render dos professores)
+- s.full_name?.toLowerCase() -> s.fullname?.toLowerCase() (filtro de busca alunos)
+- t.full_name?.toLowerCase() -> t.fullname?.toLowerCase() (filtro de busca professores)
+Verificar: grep no arquivo não deve encontrar nenhum full_name ou student_card_id após a correção.
 
 - [x] TASK 11 — Corrigir StudentGrades.tsx
-
-  Arquivo: src/components/student/StudentGrades.tsx
-
-  Substituições necessárias:
-  - g.grade_value -> g.gradevalue (todas as ocorrências: filter, reduce, comparações)
-
-  Verificar: grep no arquivo não deve encontrar nenhum grade_value após a correção.
+Arquivo: src/components/student/StudentGrades.tsx
+Substituições necessárias:
+- g.grade_value -> g.gradevalue (todas as ocorrências: filter, reduce, comparações)
+Verificar: grep no arquivo não deve encontrar nenhum grade_value após a correção.
 
 - [x] TASK 12 — Corrigir StudentFinancial.tsx
-
-  Arquivo: src/components/student/StudentFinancial.tsx
-
-  A interface local PaymentRecord ainda usa nomes antigos. Substituições necessárias:
-  - Interface: due_date: string -> duedate: string
-  - Interface: is_paid: boolean -> ispaid: boolean
-  - Interface: invoice_url?: string -> invoiceurl?: string
-  - p.is_paid -> p.ispaid (todas as ocorrências)
-  - p.due_date -> p.duedate (todas as ocorrências)
-  - p.invoice_url -> p.invoiceurl (todas as ocorrências)
-
-  Verificar: grep no arquivo não deve encontrar is_paid, due_date ou invoice_url após a correção.
+Arquivo: src/components/student/StudentFinancial.tsx
+A interface local PaymentRecord ainda usa nomes antigos.
+Substituições necessárias:
+- Interface: due_date: string -> duedate: string
+- Interface: is_paid: boolean -> ispaid: boolean
+- Interface: invoice_url?: string -> invoiceurl?: string
+- p.is_paid -> p.ispaid (todas as ocorrências)
+- p.due_date -> p.duedate (todas as ocorrências)
+- p.invoice_url -> p.invoiceurl (todas as ocorrências)
+Verificar: grep no arquivo não deve encontrar is_paid, due_date ou invoice_url após a correção.
 
 - [x] TASK 13 — Corrigir TeacherGrades.tsx
+Arquivo: src/components/teacher/TeacherGrades.tsx
+Este componente faz upsert DIRETO no Supabase (fora dos hooks).
+Substituições necessárias:
+- No objeto upsertData: student_id: s.id -> studentid: s.id
+- No objeto upsertData: class_id: selectedClass -> classid: selectedClass
+- No objeto upsertData: grade_value: finalVal -> gradevalue: finalVal
+- No objeto upsertData: updated_at: new Date().toISOString() -> updatedat: new Date().toISOString()
+- No upsert: onConflict: 'student_id,class_id' -> onConflict: 'studentid,classid'
+Verificar: grep no arquivo não deve encontrar student_id, class_id, grade_value ou updated_at após a correção.
 
-  Arquivo: src/components/teacher/TeacherGrades.tsx
+- [x] TASK 14 — Executar setup_supabase.sql V5 no Supabase
+PRE-REQUISITO OBRIGATORIO: Tasks 10, 11, 12 e 13 devem estar CONCLUIDAS antes deste passo.
+O script faz DROP completo de todas as tabelas e recria do zero com os novos nomes sem underscores.
+Os dados existentes serão perdidos (apenas logins demo no banco atual — recriar manualmente).
+Passos:
+1. Acessar Supabase Dashboard -> SQL Editor
+2. Colar o conteúdo do arquivo supabase/setup_supabase.sql (versão V5 limpa)
+3. Executar o script
+4. Verificar na aba Table Editor que todas as tabelas foram criadas com os nomes corretos:
+   profiles, classes, enrollments, materials, grades, attendance, financialrecords, announcements, chat_messages, audit_log
+5. Recriar os usuários demo no painel Auth do Supabase
+6. Testar login com cada role (aluno, docente, gestor) e confirmar que o sistema funciona
 
-  Este componente faz upsert DIRETO no Supabase (fora dos hooks). Substituições necessárias:
-  - No objeto upsertData: student_id: s.id -> studentid: s.id
-  - No objeto upsertData: class_id: selectedClass -> classid: selectedClass
-  - No objeto upsertData: grade_value: finalVal -> gradevalue: finalVal
-  - No objeto upsertData: updated_at: new Date().toISOString() -> updatedat: new Date().toISOString()
-  - No upsert: onConflict: 'student_id,class_id' -> onConflict: 'studentid,classid'
-
-  Verificar: grep no arquivo não deve encontrar student_id, class_id, grade_value ou updated_at após a correção.
-
-- [ ] TASK 14 — Executar setup_supabase.sql V5 no Supabase
-
-  PRE-REQUISITO OBRIGATORIO: Tasks 10, 11, 12 e 13 devem estar CONCLUIDAS antes deste passo.
-
-  O script faz DROP completo de todas as tabelas e recria do zero com os novos nomes sem underscores.
-  Os dados existentes serão perdidos (apenas logins demo no banco atual — recriar manualmente).
-
-  Passos:
-  1. Acessar Supabase Dashboard -> SQL Editor
-  2. Colar o conteúdo do arquivo supabase/setup_supabase.sql (versão V5 limpa)
-  3. Executar o script
-  4. Verificar na aba Table Editor que todas as tabelas foram criadas com os nomes corretos:
-     profiles, classes, enrollments, materials, grades, attendance,
-     financialrecords, announcements, chat_messages, audit_log
-  5. Recriar os usuários demo no painel Auth do Supabase
-  6. Testar login com cada role (aluno, docente, gestor) e confirmar que o sistema funciona
+Status: setup_supabase.sql reescrito para V5 (commit 2520c62). Executar no Supabase Dashboard.
 
 ---
 
