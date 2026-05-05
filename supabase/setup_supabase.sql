@@ -295,6 +295,7 @@ CREATE INDEX IF NOT EXISTS idx_classes_subject ON public.classes(subject);
 -- =============================================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
+RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
