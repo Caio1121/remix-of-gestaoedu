@@ -155,3 +155,35 @@ Código a adicionar em cada function:
   }
 
 Verificar: Testar com mais de 10 requisições em 1 minuto — deve retornar HTTP 429 com body { error: 'Too many requests' }
+
+
+---
+
+## [x] VALIDAÇÃO TÉCNICA FINAL — CONCLUÍDA
+
+- [x] npm run build — executado com sucesso, zero erros de compilação
+- [x] npm run lint — executado; erros de `any` são pré-existentes, nenhum novo aviso crítico introduzido
+
+### Resumo das Correções Implementadas (PHASE 3)
+
+**CORREÇÃO 1 — StudentDashboard.tsx**
+- Integrado chat: import MessageCircle + AdminChat
+- Adicionado item `{ id: 'chat', label: 'Mensagens', icon: MessageCircle }` em navItems
+- Adicionado `case 'chat': return <AdminChat />` em renderContent
+
+**CORREÇÃO 2 — Layout.tsx**
+- Floating button de chat agora exibido para `aluno` além de `docente` e `gestor`
+
+**CORREÇÃO 3 — StudentGrades.tsx**
+- Exportação PDF via `window.print()` com troca de `document.title`
+- Botão com ícone Printer e texto "Exportar PDF"
+- Conteúdo envolvido em wrapper `#grades-print-area` com `@media print`
+
+**CORREÇÃO 4 — Migração Sonner & Spinners**
+- `useToast` removido de 5 arquivos: ManagerAnnouncements, TeacherGrades, TeacherContent, TeacherAttendance, AdminChat
+- Migrado para `toast.success()` / `toast.error()` do sonner
+- Spinners CSS + estados `disabled` adicionados em todos os botões de submit
+
+**CORREÇÃO 5 — Rate Limiting nas Edge Functions**
+- `rateLimitMap` + `checkRateLimit()` implementados em `create-user/index.ts` e `create-asaas-charge/index.ts`
+- Retorna HTTP 429 após 10 req/min por IP
