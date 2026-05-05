@@ -187,3 +187,169 @@ Verificar: Testar com mais de 10 requisições em 1 minuto — deve retornar HTT
 **CORREÇÃO 5 — Rate Limiting nas Edge Functions**
 - `rateLimitMap` + `checkRateLimit()` implementados em `create-user/index.ts` e `create-asaas-charge/index.ts`
 - Retorna HTTP 429 após 10 req/min por IP
+
+
+---
+
+## [ ] PHASE 4 — Bugfix Pós-Auditoria (Erros Críticos Identificados)
+
+Contexto: Auditoria completa do código após a Phase 3 revelou 6 bugs. 2 deles impedem funcionamento correto em produção (severidade ALTA). Corrigir nesta ordem exata.
+
+---
+
+- [ ] TASK 19 — Atualizar src/types/index.ts para nomes V5 (PREREQ DE TODAS AS OUTRAS)
+Severidade: ALTA — bloqueia TypeScript e gera erros silenciosos em todos os componentes
+Arquivo: src/types/index.ts
+
+Problema: As interfaces ainda usam nomes antigos com underscore. O banco V5 e todos os hooks já usam sem underscore. Isso gera conflito de tipos em tempo de compilação.
+
+Substituições na interface Grade:
+- student_id: string -> studentid: string
+- class_id: string -> classid: string
+- grade_value: number | null -> gradevalue: number | null
+- updated_at: string -> updatedat: string
+
+Substituições na interface Payment:
+- student_id?: string -> studentid?: string
+- due_date: string -> duedate: string
+- is_paid?: boolean -> ispaid?: boolean
+- invoice_url?: string | null -> invoiceurl?: string | null
+- created_at?: string -> createdat?: string
+
+Substituições na interface AttendanceRecord:
+- student_id?: string -> studentid?: string
+- class_id?: string -> classid?: string
+- is_present?: boolean -> ispresent?: boolean
+
+Substituições na interface Notice:
+- created_at?: string -> createdat?: string
+- target_role?: string -> targetrole?: string
+- author_id?: string -> authorid?: string
+
+Substituições na interface Material:
+- class_id?: string -> classid?: string
+- content_url?: string -> contenturl?: string
+- material_type?: string -> materialtype?: string
+- created_at?: string -> createdat?: string
+
+Substituições na interface TeacherClass:
+- teacher_id?: string -> teacherid?: string
+- created_at?: string -> createdat?: string
+
+Verificar: grep em src/types/index.ts não deve encontrar nenhum campo com underscore (exceto Legacy comments)
+
+---
+
+- [ ] TASK 20 — Corrigir ManagerAnnouncements.tsx: target_role -> targetrole
+Severidade: ALTA — filtro de avisos por papel quebrado silenciosamente
+Arquivo: src/components/manager/ManagerAnnouncements.tsx
+
+Problema: mutateAsync passa target_role com underscore, mas o banco V5 e useCreateAnnouncement esperam targetrole sem underscore. O aviso é salvo sem targetrole definido, o que aciona o DEFAULT 'todos' no banco — tornando todos os avisos públicos para todos os roles independente do filtro escolhido.
+
+Substituição necessária em handleSubmit:
+- DE: target_role: targetRole
+- PARA: targetrole: targetRole
+
+Verificar: grep em ManagerAnnouncements.tsx não deve encontrar target_role após a correção
+
+---
+
+- [ ] TASK 21 — Corrigir TeacherAttendance.tsx: substituir setTimeout simulado por upsert real no Supabase
+Severidade: ALTA — frequência nunca persiste no banco
+Arquivo: src/components/teacher/TeacherAttendance.tsx
+
+Problema: handleSave usa setTimeout simulando a operação com um comentario admitindo "Simulating save logic as it was missing a real backend call in the snippet". Nenhuma chamada Supabase existe.
+
+Código correto para handleSave (substituir o setTimeout):
+```
+const handleSave = async () => {
+  setIsSubmitting(true);
+  try {
+    const records = students.map(s => ({
+      studentid: s.id,
+      classid: selectedClass,
+      date: date,
+      ispresent: attendance[s.id] === 'presente',
+      status: attendance[s.id],
+    }));
+    const { error } = await supabase
+      .from('attendance')
+      .upsert(records, { onConflict: 'studentid,classid,date' });
+    if (error) throw error;
+    setSaved(true);
+    toast.success('Frequência salva!', { description: `${records.length} registros gravados.` });
+    setTimeout(() => setSaved(false), 2000);
+  } catch (err: any) {
+    toast.error('Erro ao salvar', { description: err.message });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+```
+
+Adicionar import do supabase no topo (se não existir):
+- import { supabase } from '@/integrations/supabase/client';
+
+Verificar: grep não deve encontrar setTimeout em handleSave após a correção. Testar fluxo completo de registro de frequência no banco.
+
+---
+
+- [ ] TASK 22 — Corrigir StudentGrades.tsx: PDF via window.print() sem destruir o DOM
+Severidade: MÉDIA — UX ruim: React é destruído e página recarrega após impressão
+Arquivo: src/components/student/StudentGrades.tsx
+
+Problema: handlePrintPDF substitui document.body.innerHTML inteiro pelo conteúdo da área de impressão, destruindo todos os event listeners do React. Chama window.location.reload() como workaround. O @media print já existe no componente e isola visualmente o conteúdo sem precisar manipular o DOM.
+
+Substituição de handlePrintPDF:
+- DE (código atual que quebra):
+  const printArea = document.getElementById('grades-print-area');
+  if (!printArea) return;
+  const originalBody = document.body.innerHTML;
+  document.body.innerHTML = printArea.innerHTML;
+  window.print();
+  document.body.innerHTML = originalBody;
+  window.location.reload();
+
+- PARA (correto, sem destruir o DOM):
+  const original = document.title;
+  document.title = 'Boletim_EduFlow';
+  window.print();
+  document.title = original;
+
+Verificar: após imprimir, a página NÃO deve recarregar. O @media print no JSX já garante que apenas #grades-print-area seja visível no PDF.
+
+---
+
+- [ ] TASK 23 — Migrar StudentFinancial.tsx de useToast para sonner
+Severidade: MÉDIA — inconsistência: 5 arquivos migrados, 1 esquecido
+Arquivo: src/components/student/StudentFinancial.tsx
+
+Problema: Único componente que ainda importa e usa useToast. Identificado que a migração da CORREÇÃO 4 da Phase 3 não incluiu este arquivo.
+
+Substituições necessárias:
+1. Remover: import { useToast } from '@/hooks/use-toast';
+2. Adicionar: import { toast } from 'sonner';
+3. Remover: const { toast } = useToast();
+4. Substituir chamadas de toast:
+   - toast({ title: 'Sucesso', description: '...' }) -> toast.success('Sucesso', { description: '...' })
+   - toast({ title: 'Erro', ... variant: 'destructive' }) -> toast.error('Erro', { description: '...' })
+
+Verificar: grep em StudentFinancial.tsx não deve encontrar useToast após a correção
+
+---
+
+- [ ] TASK 24 — Corrigir handle_new_user() no SQL: full_name -> fullname no metadata
+Severidade: MÉDIA — usuários criados via Edge Function ficam sem nome no perfil
+Arquivo: supabase/setup_supabase.sql
+
+Problema: A função handle_new_user() lê raw_user_meta_data->>'full_name' (com underscore), mas a Edge Function create-user passa fullname (sem underscore) no user_metadata. Resultado: o trigger não encontra full_name, cai no fallback split_part(email, '@', 1), e o usuário criado fica com o email como nome no perfil até o INSERT explícito do profileError corrigir.
+
+Nota: A Edge Function create-user já faz INSERT direto na tabela profiles com fullname correto (após o auth.admin.createUser), então o impacto é na ordem das operações — o trigger roda antes do INSERT manual.
+
+Substituição na função handle_new_user():
+- DE: COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1))
+- PARA: COALESCE(new.raw_user_meta_data->>'fullname', new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1))
+
+(mantém 'full_name' como segundo fallback para compatibilidade com OAuth/magic link)
+
+Verificar: Criar um usuário via painel Gestor e confirmar que profiles.fullname mostra o nome correto (não o email).
