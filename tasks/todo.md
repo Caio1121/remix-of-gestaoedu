@@ -191,13 +191,13 @@ Verificar: Testar com mais de 10 requisições em 1 minuto — deve retornar HTT
 
 ---
 
-## [ ] PHASE 4 — Bugfix Pós-Auditoria (Erros Críticos Identificados)
+## [x] PHASE 4 — Bugfix Pós-Auditoria — CONCLUÍDA
 
 Contexto: Auditoria completa do código após a Phase 3 revelou 6 bugs. 2 deles impedem funcionamento correto em produção (severidade ALTA). Corrigir nesta ordem exata.
 
 ---
 
-- [ ] TASK 19 — Atualizar src/types/index.ts para nomes V5 (PREREQ DE TODAS AS OUTRAS)
+- [x] TASK 19 — Atualizar src/types/index.ts para nomes V5 (PREREQ DE TODAS AS OUTRAS)
 Severidade: ALTA — bloqueia TypeScript e gera erros silenciosos em todos os componentes
 Arquivo: src/types/index.ts
 
@@ -240,7 +240,7 @@ Verificar: grep em src/types/index.ts não deve encontrar nenhum campo com under
 
 ---
 
-- [ ] TASK 20 — Corrigir ManagerAnnouncements.tsx: target_role -> targetrole
+- [x] TASK 20 — Corrigir ManagerAnnouncements.tsx: target_role -> targetrole
 Severidade: ALTA — filtro de avisos por papel quebrado silenciosamente
 Arquivo: src/components/manager/ManagerAnnouncements.tsx
 
@@ -254,7 +254,7 @@ Verificar: grep em ManagerAnnouncements.tsx não deve encontrar target_role apó
 
 ---
 
-- [ ] TASK 21 — Corrigir TeacherAttendance.tsx: substituir setTimeout simulado por upsert real no Supabase
+- [x] TASK 21 — Corrigir TeacherAttendance.tsx: substituir setTimeout simulado por upsert real no Supabase
 Severidade: ALTA — frequência nunca persiste no banco
 Arquivo: src/components/teacher/TeacherAttendance.tsx
 
@@ -294,7 +294,7 @@ Verificar: grep não deve encontrar setTimeout em handleSave após a correção.
 
 ---
 
-- [ ] TASK 22 — Corrigir StudentGrades.tsx: PDF via window.print() sem destruir o DOM
+- [x] TASK 22 — Corrigir StudentGrades.tsx: PDF via window.print() sem destruir o DOM
 Severidade: MÉDIA — UX ruim: React é destruído e página recarrega após impressão
 Arquivo: src/components/student/StudentGrades.tsx
 
@@ -320,7 +320,7 @@ Verificar: após imprimir, a página NÃO deve recarregar. O @media print no JSX
 
 ---
 
-- [ ] TASK 23 — Migrar StudentFinancial.tsx de useToast para sonner
+- [x] TASK 23 — Migrar StudentFinancial.tsx de useToast para sonner
 Severidade: MÉDIA — inconsistência: 5 arquivos migrados, 1 esquecido
 Arquivo: src/components/student/StudentFinancial.tsx
 
@@ -338,7 +338,7 @@ Verificar: grep em StudentFinancial.tsx não deve encontrar useToast após a cor
 
 ---
 
-- [ ] TASK 24 — Corrigir handle_new_user() no SQL: full_name -> fullname no metadata
+- [x] TASK 24 — Corrigir handle_new_user() no SQL: full_name -> fullname no metadata
 Severidade: MÉDIA — usuários criados via Edge Function ficam sem nome no perfil
 Arquivo: supabase/setup_supabase.sql
 

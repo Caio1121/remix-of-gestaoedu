@@ -3,7 +3,7 @@ import { DollarSign, Download, CheckCircle, AlertCircle, Clock, CreditCard, QrCo
 import { Button } from "@/components/ui/button";
 import { useGeneratePayment } from "@/hooks/useDashboardData";
 import { useProfile } from "@/hooks/useProfile";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface PaymentRecord {
   id: string;
@@ -26,7 +26,6 @@ const statusConfig = {
 };
 
 export function StudentFinancial({ payments }: Props) {
-  const { toast } = useToast();
   const { data: profile } = useProfile();
   const generatePayment = useGeneratePayment();
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
@@ -37,7 +36,7 @@ export function StudentFinancial({ payments }: Props) {
 
   const handlePay = async (paymentId: string, method: 'pix' | 'boleto') => {
     if (!profile) {
-      toast({ title: "Erro", description: "Perfil não carregado.", variant: "destructive" });
+      toast.error("Erro", { description: "Perfil não carregado." });
       return;
     }
 
@@ -51,10 +50,8 @@ export function StudentFinancial({ payments }: Props) {
       setSelectedPayment(updated);
       setPaymentType(method);
     } catch (error: any) {
-      toast({
-        title: "Erro ao gerar pagamento",
-        description: error?.message ?? "Tente novamente em instantes.",
-        variant: "destructive"
+      toast.error("Erro ao gerar pagamento", {
+        description: error?.message ?? "Tente novamente em instantes."
       });
     }
 
@@ -63,7 +60,7 @@ export function StudentFinancial({ payments }: Props) {
   const copyPix = () => {
     if (selectedPayment?.pix_qr_code) {
       navigator.clipboard.writeText(selectedPayment.pix_qr_code);
-      toast({ title: "Código copiado!", description: "Cole no seu app do banco." });
+      toast.success("Código copiado!", { description: "Cole no seu app do banco." });
     }
   };
 

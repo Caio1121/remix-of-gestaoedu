@@ -15,11 +15,11 @@ export interface Student {
 
 export interface Grade {
   id: string;
-  student_id: string;
-  class_id: string;
-  grade_value: number | null;
+  studentid: string;
+  classid: string;
+  gradevalue: number | null;
   feedback: string | null;
-  updated_at: string;
+  updatedat: string;
   classes?: { name: string } | null;
   // Legacy fields for component compatibility
   subject?: string;
@@ -33,12 +33,12 @@ export interface Grade {
 
 export interface Payment {
   id: string;
-  student_id?: string;
-  due_date: string;
+  studentid?: string;
+  duedate: string;
   amount?: number;
-  is_paid?: boolean;
-  invoice_url?: string | null;
-  created_at?: string;
+  ispaid?: boolean;
+  invoiceurl?: string | null;
+  createdat?: string;
   // Legacy fields
   month?: string;
   dueDate?: string;
@@ -49,10 +49,10 @@ export interface Payment {
 
 export interface AttendanceRecord {
   id?: string;
-  student_id?: string;
-  class_id?: string;
+  studentid?: string;
+  classid?: string;
   date: string;
-  is_present?: boolean;
+  ispresent?: boolean;
   status?: "presente" | "ausente" | "justificado";
   subject?: string;
 }
@@ -61,11 +61,11 @@ export interface Notice {
   id: string;
   title: string;
   content: string;
-  created_at?: string;
+  createdat?: string;
   category?: string;
   priority?: string;
-  target_role?: string;
-  author_id?: string;
+  targetrole?: string;
+  authorid?: string;
   // Legacy
   date?: string;
 }
@@ -73,11 +73,11 @@ export interface Notice {
 export interface Material {
   id: string;
   title: string;
-  class_id?: string;
+  classid?: string;
   description?: string;
-  content_url?: string;
-  material_type?: string;
-  created_at?: string;
+  contenturl?: string;
+  materialtype?: string;
+  createdat?: string;
   // Legacy
   subject?: string;
   type?: "pdf" | "video" | "link" | "slide";
@@ -100,8 +100,8 @@ export interface TeacherClass {
   id: string;
   name: string;
   period: string;
-  teacher_id?: string;
-  created_at?: string;
+  teacherid?: string;
+  createdat?: string;
   // Legacy optional fields
   subject?: string;
   schedule?: string;

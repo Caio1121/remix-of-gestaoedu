@@ -22,7 +22,7 @@ export function ManagerAnnouncements() {
                 content,
                 category,
                 priority,
-                target_role: targetRole
+                targetrole: targetRole
             });
             toast.success("Aviso enviado com sucesso!");
             setIsModalOpen(false);
@@ -110,7 +110,7 @@ export function ManagerAnnouncements() {
                         <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{a.content}</p>
                         <div className="mt-3 text-[10px] flex items-center gap-2">
                             <span className="text-muted-foreground">Para:</span>
-                            <span className="font-bold text-primary uppercase">{a.target_role}</span>
+                            <span className="font-bold text-primary uppercase">{a.targetrole}</span>
                         </div>
                     </div>
                 ))}

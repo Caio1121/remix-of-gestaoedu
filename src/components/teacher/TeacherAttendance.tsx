@@ -3,6 +3,7 @@ import { ClassStudent, TeacherClass } from "@/types";
 import { Save, CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   students: ClassStudent[];
@@ -25,13 +26,26 @@ export function TeacherAttendance({ students, classes, selectedClass }: Props) {
 
   const handleSave = async () => {
     setIsSubmitting(true);
-    // Simulating save logic as it was missing a real backend call in the snippet
-    setTimeout(() => {
+    try {
+      const records = students.map(s => ({
+        studentid: s.id,
+        classid: selectedClass,
+        date: date,
+        ispresent: attendance[s.id] === 'presente',
+        status: attendance[s.id],
+      }));
+      const { error } = await supabase
+        .from('attendance')
+        .upsert(records, { onConflict: 'studentid,classid,date' });
+      if (error) throw error;
       setSaved(true);
-      toast.success("Sucesso", { description: "Frequência registrada com sucesso!" });
-      setIsSubmitting(false);
+      toast.success('Frequência salva!', { description: `${records.length} registros gravados.` });
       setTimeout(() => setSaved(false), 2000);
-    }, 800);
+    } catch (err: any) {
+      toast.error('Erro ao salvar', { description: err.message });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const cls = classes.find(c => c.id === selectedClass) || classes[0];

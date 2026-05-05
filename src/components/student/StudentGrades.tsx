@@ -16,13 +16,10 @@ export function StudentGrades({ grades }: Props) {
   const approved = withValue.filter(g => Number(g.gradevalue || 0) >= 6).length;
   
   const handlePrintPDF = () => {
-    const printArea = document.getElementById('grades-print-area');
-    if (!printArea) return;
-    const originalBody = document.body.innerHTML;
-    document.body.innerHTML = printArea.innerHTML;
+    const original = document.title;
+    document.title = 'Boletim_EduFlow';
     window.print();
-    document.body.innerHTML = originalBody;
-    window.location.reload();
+    document.title = original;
   };
 
   return (
