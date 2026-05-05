@@ -16,39 +16,39 @@ export type Database = {
     Tables: {
       announcements: {
         Row: {
-          author_id: string | null
+          authorid: string | null
           category: string | null
           content: string
-          created_at: string
+          createdat: string
           id: string
           priority: string | null
-          target_role: string
+          targetrole: string
           title: string
         }
         Insert: {
-          author_id?: string | null
+          authorid?: string | null
           category?: string | null
           content: string
-          created_at?: string
+          createdat?: string
           id?: string
           priority?: string | null
-          target_role: string
+          targetrole: string
           title: string
         }
         Update: {
-          author_id?: string | null
+          authorid?: string | null
           category?: string | null
           content?: string
-          created_at?: string
+          createdat?: string
           id?: string
           priority?: string | null
-          target_role?: string
+          targetrole?: string
           title?: string
         }
         Relationships: [
           {
-            foreignKeyName: "announcements_author_id_fkey"
-            columns: ["author_id"]
+            foreignKeyName: "announcements_authorid_fkey"
+            columns: ["authorid"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -57,46 +57,46 @@ export type Database = {
       }
       attendance: {
         Row: {
-          class_id: string | null
+          classid: string | null
           date: string | null
           id: string
-          is_present: boolean | null
-          justification_description: string | null
-          justification_file_url: string | null
+          ispresent: boolean | null
+          justificationdescription: string | null
+          justificationfileurl: string | null
           status: string | null
-          student_id: string | null
+          studentid: string | null
         }
         Insert: {
-          class_id?: string | null
+          classid?: string | null
           date?: string | null
           id?: string
-          is_present?: boolean | null
-          justification_description?: string | null
-          justification_file_url?: string | null
+          ispresent?: boolean | null
+          justificationdescription?: string | null
+          justificationfileurl?: string | null
           status?: string | null
-          student_id?: string | null
+          studentid?: string | null
         }
         Update: {
-          class_id?: string | null
+          classid?: string | null
           date?: string | null
           id?: string
-          is_present?: boolean | null
-          justification_description?: string | null
-          justification_file_url?: string | null
+          ispresent?: boolean | null
+          justificationdescription?: string | null
+          justificationfileurl?: string | null
           status?: string | null
-          student_id?: string | null
+          studentid?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "attendance_class_id_fkey"
-            columns: ["class_id"]
+            foreignKeyName: "attendance_classid_fkey"
+            columns: ["classid"]
             isOneToOne: false
             referencedRelation: "classes"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "attendance_student_id_fkey"
-            columns: ["student_id"]
+            foreignKeyName: "attendance_studentid_fkey"
+            columns: ["studentid"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -106,36 +106,36 @@ export type Database = {
       chat_messages: {
         Row: {
           content: string
-          created_at: string
+          createdat: string
           id: string
-          receiver_id: string | null
-          sender_id: string | null
+          receiverid: string | null
+          senderid: string | null
         }
         Insert: {
           content: string
-          created_at?: string
+          createdat?: string
           id?: string
-          receiver_id?: string | null
-          sender_id?: string | null
+          receiverid?: string | null
+          senderid?: string | null
         }
         Update: {
           content?: string
-          created_at?: string
+          createdat?: string
           id?: string
-          receiver_id?: string | null
-          sender_id?: string | null
+          receiverid?: string | null
+          senderid?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "chat_messages_receiver_id_fkey"
-            columns: ["receiver_id"]
+            foreignKeyName: "chat_messages_receiverid_fkey"
+            columns: ["receiverid"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "chat_messages_sender_id_fkey"
-            columns: ["sender_id"]
+            foreignKeyName: "chat_messages_senderid_fkey"
+            columns: ["senderid"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -144,30 +144,30 @@ export type Database = {
       }
       classes: {
         Row: {
-          created_at: string | null
+          createdat: string | null
           id: string
           name: string
           period: string
-          teacher_id: string | null
+          teacherid: string | null
         }
         Insert: {
-          created_at?: string | null
+          createdat?: string | null
           id?: string
           name: string
           period: string
-          teacher_id?: string | null
+          teacherid?: string | null
         }
         Update: {
-          created_at?: string | null
+          createdat?: string | null
           id?: string
           name?: string
           period?: string
-          teacher_id?: string | null
+          teacherid?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "classes_teacher_id_fkey"
-            columns: ["teacher_id"]
+            foreignKeyName: "classes_teacherid_fkey"
+            columns: ["teacherid"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -176,72 +176,72 @@ export type Database = {
       }
       enrollments: {
         Row: {
-          class_id: string | null
-          enrolled_at: string | null
+          classid: string | null
+          enrolledat: string | null
           id: string
-          student_id: string | null
+          studentid: string | null
         }
         Insert: {
-          class_id?: string | null
-          enrolled_at?: string | null
+          classid?: string | null
+          enrolledat?: string | null
           id?: string
-          student_id?: string | null
+          studentid?: string | null
         }
         Update: {
-          class_id?: string | null
-          enrolled_at?: string | null
+          classid?: string | null
+          enrolledat?: string | null
           id?: string
-          student_id?: string | null
+          studentid?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "enrollments_class_id_fkey"
-            columns: ["class_id"]
+            foreignKeyName: "enrollments_classid_fkey"
+            columns: ["classid"]
             isOneToOne: false
             referencedRelation: "classes"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "enrollments_student_id_fkey"
-            columns: ["student_id"]
+            foreignKeyName: "enrollments_studentid_fkey"
+            columns: ["studentid"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
       }
-      financial_records: {
+      financialrecords: {
         Row: {
           amount: number | null
-          created_at: string | null
-          due_date: string
+          createdat: string | null
+          duedate: string
           id: string
-          invoice_url: string | null
-          is_paid: boolean | null
-          student_id: string | null
+          invoiceurl: string | null
+          ispaid: boolean | null
+          studentid: string | null
         }
         Insert: {
           amount?: number | null
-          created_at?: string | null
-          due_date: string
+          createdat?: string | null
+          duedate: string
           id?: string
-          invoice_url?: string | null
-          is_paid?: boolean | null
-          student_id?: string | null
+          invoiceurl?: string | null
+          ispaid?: boolean | null
+          studentid?: string | null
         }
         Update: {
           amount?: number | null
-          created_at?: string | null
-          due_date?: string
+          createdat?: string | null
+          duedate?: string
           id?: string
-          invoice_url?: string | null
-          is_paid?: boolean | null
-          student_id?: string | null
+          invoiceurl?: string | null
+          ispaid?: boolean | null
+          studentid?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "financial_records_student_id_fkey"
-            columns: ["student_id"]
+            foreignKeyName: "financialrecords_studentid_fkey"
+            columns: ["studentid"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -250,40 +250,40 @@ export type Database = {
       }
       grades: {
         Row: {
-          class_id: string | null
+          classid: string | null
           feedback: string | null
-          grade_value: number | null
+          gradevalue: number | null
           id: string
-          student_id: string | null
-          updated_at: string | null
+          studentid: string | null
+          updatedat: string | null
         }
         Insert: {
-          class_id?: string | null
+          classid?: string | null
           feedback?: string | null
-          grade_value?: number | null
+          gradevalue?: number | null
           id?: string
-          student_id?: string | null
-          updated_at?: string | null
+          studentid?: string | null
+          updatedat?: string | null
         }
         Update: {
-          class_id?: string | null
+          classid?: string | null
           feedback?: string | null
-          grade_value?: number | null
+          gradevalue?: number | null
           id?: string
-          student_id?: string | null
-          updated_at?: string | null
+          studentid?: string | null
+          updatedat?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "grades_class_id_fkey"
-            columns: ["class_id"]
+            foreignKeyName: "grades_classid_fkey"
+            columns: ["classid"]
             isOneToOne: false
             referencedRelation: "classes"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "grades_student_id_fkey"
-            columns: ["student_id"]
+            foreignKeyName: "grades_studentid_fkey"
+            columns: ["studentid"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -292,36 +292,36 @@ export type Database = {
       }
       materials: {
         Row: {
-          class_id: string | null
-          content_url: string | null
-          created_at: string | null
+          classid: string | null
+          contenturl: string | null
+          createdat: string | null
           description: string | null
           id: string
-          material_type: string | null
+          materialtype: string | null
           title: string
         }
         Insert: {
-          class_id?: string | null
-          content_url?: string | null
-          created_at?: string | null
+          classid?: string | null
+          contenturl?: string | null
+          createdat?: string | null
           description?: string | null
           id?: string
-          material_type?: string | null
+          materialtype?: string | null
           title: string
         }
         Update: {
-          class_id?: string | null
-          content_url?: string | null
-          created_at?: string | null
+          classid?: string | null
+          contenturl?: string | null
+          createdat?: string | null
           description?: string | null
           id?: string
-          material_type?: string | null
+          materialtype?: string | null
           title?: string
         }
         Relationships: [
           {
-            foreignKeyName: "materials_class_id_fkey"
-            columns: ["class_id"]
+            foreignKeyName: "materials_classid_fkey"
+            columns: ["classid"]
             isOneToOne: false
             referencedRelation: "classes"
             referencedColumns: ["id"]
@@ -330,63 +330,63 @@ export type Database = {
       }
       profiles: {
         Row: {
-          created_at: string
-          full_name: string | null
+          createdat: string
+          fullname: string | null
           id: string
           role: Database["public"]["Enums"]["user_role"] | null
-          student_card_id: string | null
+          studentcardid: string | null
         }
         Insert: {
-          created_at?: string
-          full_name?: string | null
+          createdat?: string
+          fullname?: string | null
           id: string
           role?: Database["public"]["Enums"]["user_role"] | null
-          student_card_id?: string | null
+          studentcardid?: string | null
         }
         Update: {
-          created_at?: string
-          full_name?: string | null
+          createdat?: string
+          fullname?: string | null
           id?: string
           role?: Database["public"]["Enums"]["user_role"] | null
-          student_card_id?: string | null
+          studentcardid?: string | null
         }
         Relationships: []
       }
       student_documents: {
         Row: {
-          created_at: string
-          doc_type: string
-          file_size: string | null
-          file_url: string | null
+          createdat: string
+          doctype: string
+          filesize: string | null
+          fileurl: string | null
           id: string
           name: string
           status: string
-          student_id: string
+          studentid: string
         }
         Insert: {
-          created_at?: string
-          doc_type?: string
-          file_size?: string | null
-          file_url?: string | null
+          createdat?: string
+          doctype?: string
+          filesize?: string | null
+          fileurl?: string | null
           id?: string
           name: string
           status?: string
-          student_id: string
+          studentid: string
         }
         Update: {
-          created_at?: string
-          doc_type?: string
-          file_size?: string | null
-          file_url?: string | null
+          createdat?: string
+          doctype?: string
+          filesize?: string | null
+          fileurl?: string | null
           id?: string
           name?: string
           status?: string
-          student_id?: string
+          studentid?: string
         }
         Relationships: [
           {
-            foreignKeyName: "student_documents_student_id_fkey"
-            columns: ["student_id"]
+            foreignKeyName: "student_documents_studentid_fkey"
+            columns: ["studentid"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -423,9 +423,7 @@ export type Tables<
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
@@ -451,9 +449,7 @@ export type TablesInsert<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
@@ -476,9 +472,7 @@ export type TablesUpdate<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
@@ -501,9 +495,7 @@ export type Enums<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
@@ -518,9 +510,7 @@ export type CompositeTypes<
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
