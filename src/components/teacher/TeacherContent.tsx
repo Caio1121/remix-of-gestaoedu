@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { FileText, Film, Link2, Presentation, Plus, Trash2 } from "lucide-react";
+import { FileText, Film, Link2, Presentation, Plus, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTeacherClasses, useMaterials, useUploadMaterial } from "@/hooks/useDashboardData";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const typeConfig = {
@@ -15,7 +15,6 @@ const typeConfig = {
 };
 
 export function TeacherContent() {
-  const { toast } = useToast();
   const { data: profile } = useProfile();
   const { data: classes, isLoading: classesLoading } = useTeacherClasses(profile?.id);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
@@ -25,6 +24,7 @@ export function TeacherContent() {
 
   const [showForm, setShowForm] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState<"pdf" | "video" | "link" | "slide">("pdf");
@@ -48,9 +48,9 @@ export function TeacherContent() {
         .getPublicUrl(filePath);
 
       setContentUrl(publicUrl);
-      toast({ title: "Arquivo carregado com sucesso!" });
+      toast.success("Arquivo carregado com sucesso!");
     } catch (error: any) {
-      toast({ title: "Erro no upload", description: error.message, variant: "destructive" });
+      toast.error("Erro no upload: " + error.message);
     } finally {
       setIsUploading(false);
     }
@@ -58,9 +58,11 @@ export function TeacherContent() {
 
   const handlePublish = async () => {
     if (!selectedClassId || !title || !contentUrl) {
-      toast({ title: "Preencha todos os campos", description: "Certifique-se de carregar o arquivo ou inserir um link.", variant: "destructive" });
+      toast.error("Preencha todos os campos. Certifique-se de carregar o arquivo ou inserir um link.");
       return;
     }
+
+    setIsSubmitting(true);
 
     try {
       await uploadMaterial.mutateAsync({
@@ -70,26 +72,26 @@ export function TeacherContent() {
         materialtype: type,
         contenturl: contentUrl
       });
-      toast({ title: "Material publicado!" });
+      toast.success("Material publicado!");
       setShowForm(false);
       setTitle("");
       setDescription("");
       setContentUrl("");
       refetch();
     } catch (error: any) {
-      toast({
-        title: "Erro ao publicar",
-        description: error?.message ?? "Tente novamente.",
-        variant: "destructive",
-      });
+      toast.error("Erro ao publicar: " + (error?.message ?? "Tente novamente."));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from("materials").delete().eq("id", id);
     if (!error) {
-      toast({ title: "Material removido" });
+      toast.success("Material removido");
       refetch();
+    } else {
+      toast.error("Erro ao remover: " + error.message);
     }
   };
 
@@ -164,8 +166,10 @@ export function TeacherContent() {
             </div>
           </div>
           <div className="flex gap-3 justify-end">
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={handlePublish} className="gradient-brand text-primary-foreground">Publicar Material</Button>
+            <Button variant="outline" disabled={isSubmitting || isUploading} onClick={() => setShowForm(false)}>Cancelar</Button>
+            <Button onClick={handlePublish} disabled={isSubmitting || isUploading} className="gradient-brand text-primary-foreground min-w-[140px]">
+              {isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Publicando...</> : "Publicar Material"}
+            </Button>
           </div>
         </div>
       )}

@@ -1,4 +1,6 @@
 import { Grade } from "@/types";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Props { grades: Grade[] }
 
@@ -12,13 +14,36 @@ export function StudentGrades({ grades }: Props) {
   const withValue = grades.filter(g => g.gradevalue !== null);
   const avg = withValue.length ? withValue.reduce((s, g) => s + Number(g.gradevalue || 0), 0) / withValue.length : 0;
   const approved = withValue.filter(g => Number(g.gradevalue || 0) >= 6).length;
+  
+  const handlePrintPDF = () => {
+    const originalTitle = document.title;
+    document.title = "Boletim_EduFlow";
+    window.print();
+    document.title = originalTitle;
+  };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-foreground">Minhas Notas</h2>
-        <p className="text-muted-foreground text-sm">Semestre 2025.1</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Minhas Notas</h2>
+          <p className="text-muted-foreground text-sm">Semestre 2025.1</p>
+        </div>
+        <Button onClick={handlePrintPDF} variant="outline" className="gap-2 bg-white">
+          <Download className="w-4 h-4" />
+          Exportar PDF
+        </Button>
       </div>
+
+      <style>{`
+        @media print {
+          body > *:not(#grades-print-area) { display: none !important; }
+          #grades-print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
+          .shadow-card { shadow: none !important; border: 1px solid #eee !important; }
+        }
+      `}</style>
+
+      <div id="grades-print-area" className="space-y-6">
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
@@ -98,6 +123,7 @@ export function StudentGrades({ grades }: Props) {
             );
           })}
         </div>
+      </div>
       </div>
     </div>
   );

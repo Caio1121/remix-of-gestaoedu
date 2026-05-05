@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { ClassStudent, TeacherClass } from "@/types";
-import { Save, CheckCircle } from "lucide-react";
+import { Save, CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from '@/integrations/supabase/client'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
 interface Props {
   students: ClassStudent[];
@@ -25,9 +25,10 @@ export function TeacherGrades({ students, classes, selectedClass, onClassChange 
     return init;
   });
   const [saved, setSaved] = useState(false);
-  const { toast } = useToast()
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSave = async () => {
+    setIsSubmitting(true)
     try {
       const upsertData = students.map((s) => {
         const av1Raw = grades[s.id]?.av1
@@ -56,14 +57,12 @@ export function TeacherGrades({ students, classes, selectedClass, onClassChange 
       if (error) throw error
 
       setSaved(true)
-      toast({ title: 'Notas salvas com sucesso' })
+      toast.success('Notas salvas com sucesso')
       setTimeout(() => setSaved(false), 2000)
     } catch (err: any) {
-      toast({
-        title: 'Erro ao salvar notas',
-        description: err?.message ?? 'Tente novamente.',
-        variant: 'destructive',
-      })
+      toast.error('Erro ao salvar notas: ' + (err?.message ?? 'Tente novamente.'))
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -99,8 +98,8 @@ const getFinal = (sid: string): string | null => {
           >
             {classes.map(c => <option key={c.id} value={c.id}>{c.name} — {c.subject}</option>)}
           </select>
-          <Button onClick={handleSave} className="gradient-brand text-primary-foreground h-9">
-            {saved ? <><CheckCircle className="w-4 h-4 mr-1" />Salvo!</> : <><Save className="w-4 h-4 mr-1" />Salvar</>}
+          <Button onClick={handleSave} disabled={isSubmitting} className="gradient-brand text-primary-foreground h-9">
+            {isSubmitting ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Salvando...</> : (saved ? <><CheckCircle className="w-4 h-4 mr-1" />Salvo!</> : <><Save className="w-4 h-4 mr-1" />Salvar</>)}
           </Button>
         </div>
       </div>

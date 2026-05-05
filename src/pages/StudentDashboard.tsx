@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import {
   LayoutDashboard, BookOpen, DollarSign, CalendarCheck, Calendar,
-  FileText, Upload, CreditCard, Bell
+  FileText, Upload, CreditCard, Bell, MessageCircle
 } from "lucide-react";
 import { useFinancial, useMaterials, useAttendance, useGrades, useStudentEnrollments } from "@/hooks/useStudentData";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
@@ -15,6 +15,7 @@ import { StudentMaterials } from "@/components/student/StudentMaterials";
 import { StudentDocuments } from "@/components/student/StudentDocuments";
 import { StudentIDCard } from "@/components/student/StudentIDCard";
 import { StudentNotices } from "@/components/student/StudentNotices";
+import { AdminChat } from "../components/chat/AdminChat";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const navItems = [
@@ -27,6 +28,7 @@ const navItems = [
   { id: "documents", label: "Documentos", icon: Upload },
   { id: "notices", label: "Avisos", icon: Bell },
   { id: "idcard", label: "Carteirinha Digital", icon: CreditCard },
+  { id: "chat", label: "Mensagens", icon: MessageCircle },
 ];
 
 export default function StudentDashboard() {
@@ -91,6 +93,7 @@ export default function StudentDashboard() {
       case "documents": return <StudentDocuments />;
       case "notices": return <StudentNotices notices={(notices || []) as any} />;
       case "idcard": return <StudentIDCard student={studentData} />;
+      case "chat": return <div className="p-4 max-w-2xl mx-auto"><AdminChat /></div>;
       default: return <StudentHome student={studentData} grades={(grades || []) as any} payments={(payments || []) as any} notices={(notices || []) as any} attendanceRate={studentAttendanceRate} onNavigate={setActiveItem} />;
 
     }

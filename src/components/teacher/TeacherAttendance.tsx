@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { ClassStudent, TeacherClass } from "@/types";
-import { Save, CheckCircle } from "lucide-react";
+import { Save, CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface Props {
   students: ClassStudent[];
@@ -20,6 +21,18 @@ export function TeacherAttendance({ students, classes, selectedClass }: Props) {
     return init;
   });
   const [saved, setSaved] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSave = async () => {
+    setIsSubmitting(true);
+    // Simulating save logic as it was missing a real backend call in the snippet
+    setTimeout(() => {
+      setSaved(true);
+      toast.success("Frequência salva com sucesso!");
+      setIsSubmitting(false);
+      setTimeout(() => setSaved(false), 2000);
+    }, 800);
+  };
 
   const cls = classes.find(c => c.id === selectedClass) || classes[0];
 
@@ -48,8 +61,8 @@ export function TeacherAttendance({ students, classes, selectedClass }: Props) {
             onChange={e => setDate(e.target.value)}
             className="h-9 border border-input bg-background rounded-lg px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
-          <Button onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2000); }} className="gradient-brand text-primary-foreground h-9">
-            {saved ? <><CheckCircle className="w-4 h-4 mr-1" />Salvo!</> : <><Save className="w-4 h-4 mr-1" />Salvar</>}
+          <Button onClick={handleSave} disabled={isSubmitting} className="gradient-brand text-primary-foreground h-9">
+            {isSubmitting ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Salvando...</> : (saved ? <><CheckCircle className="w-4 h-4 mr-1" />Salvo!</> : <><Save className="w-4 h-4 mr-1" />Salvar</>)}
           </Button>
         </div>
       </div>

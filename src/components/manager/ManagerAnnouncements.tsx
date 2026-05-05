@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { useAnnouncements, useCreateAnnouncement } from "@/hooks/useDashboardData";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export function ManagerAnnouncements() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -13,7 +13,6 @@ export function ManagerAnnouncements() {
 
     const { data: announcements, isLoading } = useAnnouncements();
     const createAnnouncementMutation = useCreateAnnouncement();
-    const { toast } = useToast();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -25,16 +24,12 @@ export function ManagerAnnouncements() {
                 priority,
                 target_role: targetRole
             });
-            toast({ title: "Publicado!", description: "Aviso enviado com sucesso." });
+            toast.success("Aviso enviado com sucesso!");
             setIsModalOpen(false);
             setTitle("");
             setContent("");
         } catch (error: any) {
-            toast({
-                variant: "destructive",
-                title: "Erro ao publicar aviso",
-                description: error?.message ?? "Tente novamente."
-            });
+            toast.error("Erro ao publicar aviso: " + (error?.message ?? "Tente novamente."));
         }
 
     };

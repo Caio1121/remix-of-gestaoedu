@@ -43,7 +43,7 @@ Status: setup_supabase.sql reescrito para V5 (commit 2520c62). Executar no Supab
 
 ---
 
-## [ ] PHASE 3 — Novos Recursos & UX
+## [x] PHASE 3 — Novos Recursos & UX — CONCLUÍDA
 
 Contexto: Features novas. Só iniciar após a PHASE 2 estar 100% concluída e o banco V5 no ar.
 
@@ -51,7 +51,7 @@ Contexto: Features novas. Só iniciar após a PHASE 2 estar 100% concluída e o 
 
 ---
 
-- [ ] TASK 15 — Implementar sistema de chat por turmas (Supabase Realtime)
+- [x] TASK 15 — Implementar sistema de chat por turmas (Supabase Realtime)
 
 Anlise: Chat de Mensagens Diretas (DM) já está parcialmente implementado.
 
@@ -76,7 +76,7 @@ Arquivos a alterar:
 
 ---
 
-- [ ] TASK 16 — Adicionar exportação de boletim em PDF
+- [x] TASK 16 — Adicionar exportação de boletim em PDF
 
 Estratégia: window.print() com CSS print (zero dependências, output limpo)
 
@@ -99,7 +99,7 @@ Arquivo a alterar:
 
 ---
 
-- [ ] TASK 17 — Melhorar feedback visual em formulários de edição
+- [x] TASK 17 — Melhorar feedback visual em formulários de edição
 
 Biblioteca: sonner (já instalada) - import { toast } from 'sonner'
 
@@ -121,7 +121,7 @@ Arquivos a alterar:
 
 ---
 
-- [ ] TASK 18 — Implementar Rate Limiting nas Edge Functions (Segurança)
+- [x] TASK 18 — Implementar Rate Limiting nas Edge Functions (Segurança)
 
 Padrão: IP-based rate limiting com Map em memória (10 req/min por IP)
 

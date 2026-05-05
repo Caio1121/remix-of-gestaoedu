@@ -207,7 +207,7 @@ export function Layout({
           {children}
 
           {/* Floating Chat Button */}
-          {(userRole === "docente" || userRole === "gestor") && (
+          {(userRole === "docente" || userRole === "gestor" || userRole === "aluno") && (
             <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
               {isChatOpen && (
                 <div className="animate-in slide-in-from-bottom-5 duration-300">
