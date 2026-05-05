@@ -1,5 +1,5 @@
 import { Grade } from "@/types";
-import { Download } from "lucide-react";
+import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Props { grades: Grade[] }
@@ -16,10 +16,13 @@ export function StudentGrades({ grades }: Props) {
   const approved = withValue.filter(g => Number(g.gradevalue || 0) >= 6).length;
   
   const handlePrintPDF = () => {
-    const originalTitle = document.title;
-    document.title = "Boletim_EduFlow";
+    const printArea = document.getElementById('grades-print-area');
+    if (!printArea) return;
+    const originalBody = document.body.innerHTML;
+    document.body.innerHTML = printArea.innerHTML;
     window.print();
-    document.title = originalTitle;
+    document.body.innerHTML = originalBody;
+    window.location.reload();
   };
 
   return (
@@ -29,8 +32,8 @@ export function StudentGrades({ grades }: Props) {
           <h2 className="text-xl font-bold text-foreground">Minhas Notas</h2>
           <p className="text-muted-foreground text-sm">Semestre 2025.1</p>
         </div>
-        <Button onClick={handlePrintPDF} variant="outline" className="gap-2 bg-white">
-          <Download className="w-4 h-4" />
+        <Button onClick={handlePrintPDF} variant="outline" className="gap-2 bg-white text-sm px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors">
+          <Printer className="w-4 h-4" />
           Exportar PDF
         </Button>
       </div>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useChatMessages, useSendMessage } from "@/hooks/useChat";
 import { useProfile } from "@/hooks/useProfile";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AdminChatProps {
@@ -18,7 +18,6 @@ export function AdminChat({ receiverId, onClose }: AdminChatProps) {
     const { data: messages = [] } = useChatMessages(selectedReceiver || "");
     const sendMessage = useSendMessage();
     const { data: profile } = useProfile();
-    const { toast } = useToast();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [receivers, setReceivers] = useState<any[]>([]);
     
@@ -32,7 +31,7 @@ export function AdminChat({ receiverId, onClose }: AdminChatProps) {
 
             const { data } = await supabase
                 .from('profiles')
-                .select('id, full_name, role')
+                .select('id, fullname, role')
                 .in('role', targetRoles as any)
                 .neq('id', profile?.id as string)            // exclude self from contact list
 
@@ -58,16 +57,12 @@ export function AdminChat({ receiverId, onClose }: AdminChatProps) {
 
         try {
             await sendMessage.mutateAsync({
-                receiver_id: selectedReceiver,
+                receiverid: selectedReceiver,
                 content: content.trim()
             });
             setContent("");
         } catch (error: any) {
-            toast({
-                title: 'Erro ao enviar mensagem',
-                description: error?.message ?? 'Tente novamente.',
-                variant: 'destructive',
-            })
+            toast.error('Erro', { description: 'Falha ao enviar mensagem: ' + (error?.message ?? 'Tente novamente.') })
         }
     };
 
@@ -103,7 +98,7 @@ export function AdminChat({ receiverId, onClose }: AdminChatProps) {
                                     <User className="w-4 h-4 text-primary" />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-medium text-foreground">{r.full_name}</div>
+                                    <div className="text-sm font-medium text-foreground">{r.fullname}</div>
                                     <div className="text-[10px] text-muted-foreground uppercase">{r.role}</div>
                                 </div>
                             </button>
@@ -116,7 +111,7 @@ export function AdminChat({ receiverId, onClose }: AdminChatProps) {
                         <div className="px-4 py-2 border-b border-border text-xs flex items-center gap-2">
                             <button onClick={() => setSelectedReceiver(null)} className="text-primary hover:underline">← Voltar</button>
                             <span className="text-muted-foreground">Conversando com:</span>
-                            <span className="font-semibold">{receivers.find(r => r.id === selectedReceiver)?.full_name}</span>
+                            <span className="font-semibold">{receivers.find(r => r.id === selectedReceiver)?.fullname}</span>
                         </div>
 
                         {/* Messages Area */}
@@ -127,7 +122,7 @@ export function AdminChat({ receiverId, onClose }: AdminChatProps) {
                                 </div>
                             ) : (
                                 messages.map((m: any) => {
-                                    const isMine = m.sender_id === profile.id;
+                                    const isMine = m.senderid === profile.id;
                                     return (
                                         <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                                             <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${isMine
@@ -136,7 +131,7 @@ export function AdminChat({ receiverId, onClose }: AdminChatProps) {
                                                 }`}>
                                                 {m.content}
                                                 <div className={`text-[10px] mt-1 opacity-70 ${isMine ? 'text-right' : 'text-left'}`}>
-                                                    {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    {new Date(m.createdat).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </div>
                                             </div>
                                         </div>
@@ -153,8 +148,12 @@ export function AdminChat({ receiverId, onClose }: AdminChatProps) {
                                 placeholder="Digite sua mensagem..."
                                 className="flex-1"
                             />
-                            <Button type="submit" size="icon" className="shrink-0 gradient-brand text-white">
-                                <Send className="w-4 h-4" />
+                            <Button type="submit" size="icon" disabled={sendMessage.isPending} className="shrink-0 gradient-brand text-white flex items-center justify-center">
+                                {sendMessage.isPending ? (
+                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    <Send className="w-4 h-4" />
+                                )}
                             </Button>
                         </form>
                     </div>

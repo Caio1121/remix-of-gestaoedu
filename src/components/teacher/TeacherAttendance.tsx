@@ -28,7 +28,7 @@ export function TeacherAttendance({ students, classes, selectedClass }: Props) {
     // Simulating save logic as it was missing a real backend call in the snippet
     setTimeout(() => {
       setSaved(true);
-      toast.success("Frequência salva com sucesso!");
+      toast.success("Sucesso", { description: "Frequência registrada com sucesso!" });
       setIsSubmitting(false);
       setTimeout(() => setSaved(false), 2000);
     }, 800);
@@ -61,8 +61,11 @@ export function TeacherAttendance({ students, classes, selectedClass }: Props) {
             onChange={e => setDate(e.target.value)}
             className="h-9 border border-input bg-background rounded-lg px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
-          <Button onClick={handleSave} disabled={isSubmitting} className="gradient-brand text-primary-foreground h-9">
-            {isSubmitting ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Salvando...</> : (saved ? <><CheckCircle className="w-4 h-4 mr-1" />Salvo!</> : <><Save className="w-4 h-4 mr-1" />Salvar</>)}
+          <Button onClick={handleSave} disabled={isSubmitting} className="gradient-brand text-primary-foreground h-9 flex items-center justify-center gap-2">
+            {isSubmitting && (
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            )}
+            {isSubmitting ? "Salvando..." : (saved ? <><CheckCircle className="w-4 h-4 mr-1" />Salvo!</> : <><Save className="w-4 h-4 mr-1" />Salvar</>)}
           </Button>
         </div>
       </div>

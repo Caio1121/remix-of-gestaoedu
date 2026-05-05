@@ -48,9 +48,9 @@ export function TeacherContent() {
         .getPublicUrl(filePath);
 
       setContentUrl(publicUrl);
-      toast.success("Arquivo carregado com sucesso!");
+      toast.success("Upload concluído", { description: "Arquivo carregado com sucesso!" });
     } catch (error: any) {
-      toast.error("Erro no upload: " + error.message);
+      toast.error("Falha no upload", { description: error.message });
     } finally {
       setIsUploading(false);
     }
@@ -58,7 +58,7 @@ export function TeacherContent() {
 
   const handlePublish = async () => {
     if (!selectedClassId || !title || !contentUrl) {
-      toast.error("Preencha todos os campos. Certifique-se de carregar o arquivo ou inserir um link.");
+      toast.error("Campos incompletos", { description: "Preencha todos os campos e anexe um arquivo ou link." });
       return;
     }
 
@@ -72,14 +72,14 @@ export function TeacherContent() {
         materialtype: type,
         contenturl: contentUrl
       });
-      toast.success("Material publicado!");
+      toast.success("Publicado", { description: "Material publicado com sucesso!" });
       setShowForm(false);
       setTitle("");
       setDescription("");
       setContentUrl("");
       refetch();
     } catch (error: any) {
-      toast.error("Erro ao publicar: " + (error?.message ?? "Tente novamente."));
+      toast.error("Falha na publicação", { description: error?.message ?? "Tente novamente." });
     } finally {
       setIsSubmitting(false);
     }
@@ -88,10 +88,10 @@ export function TeacherContent() {
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from("materials").delete().eq("id", id);
     if (!error) {
-      toast.success("Material removido");
+      toast.success("Removido", { description: "Material removido com sucesso." });
       refetch();
     } else {
-      toast.error("Erro ao remover: " + error.message);
+      toast.error("Erro ao remover", { description: error.message });
     }
   };
 
@@ -167,8 +167,11 @@ export function TeacherContent() {
           </div>
           <div className="flex gap-3 justify-end">
             <Button variant="outline" disabled={isSubmitting || isUploading} onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={handlePublish} disabled={isSubmitting || isUploading} className="gradient-brand text-primary-foreground min-w-[140px]">
-              {isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Publicando...</> : "Publicar Material"}
+            <Button onClick={handlePublish} disabled={isSubmitting || isUploading} className="gradient-brand text-primary-foreground min-w-[140px] flex items-center justify-center gap-2">
+              {isSubmitting && (
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              )}
+              {isSubmitting ? "Publicando..." : "Publicar Material"}
             </Button>
           </div>
         </div>

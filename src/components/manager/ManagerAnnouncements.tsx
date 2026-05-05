@@ -85,7 +85,13 @@ export function ManagerAnnouncements() {
                                 <label className="text-xs font-bold uppercase text-muted-foreground">Conteúdo</label>
                                 <textarea required rows={4} value={content} onChange={e => setContent(e.target.value)} className="w-full mt-1 px-3 py-2 border rounded-lg" />
                             </div>
-                            <button disabled={createAnnouncementMutation.isPending} className="w-full gradient-brand text-white py-2 rounded-lg font-bold">
+                            <button 
+                                disabled={createAnnouncementMutation.isPending} 
+                                className="w-full gradient-brand text-white py-2 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {createAnnouncementMutation.isPending && (
+                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                )}
                                 {createAnnouncementMutation.isPending ? "Enviando..." : "Publicar Agora"}
                             </button>
                         </form>

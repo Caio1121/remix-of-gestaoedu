@@ -57,10 +57,10 @@ export function TeacherGrades({ students, classes, selectedClass, onClassChange 
       if (error) throw error
 
       setSaved(true)
-      toast.success('Notas salvas com sucesso')
+      toast.success('Notas salvas', { description: 'As notas foram registradas com sucesso.' })
       setTimeout(() => setSaved(false), 2000)
     } catch (err: any) {
-      toast.error('Erro ao salvar notas: ' + (err?.message ?? 'Tente novamente.'))
+      toast.error('Erro ao salvar', { description: err?.message ?? 'Tente novamente.' })
     } finally {
       setIsSubmitting(false)
     }
