@@ -7,9 +7,9 @@ import { useToast } from "@/hooks/use-toast";
 
 interface PaymentRecord {
   id: string;
-  due_date: string;
-  is_paid: boolean;
-  invoice_url?: string;
+  duedate: string;
+  ispaid: boolean;
+  invoiceurl?: string;
   pix_qr_code?: string;
   pix_image_url?: string;
   boleto_url?: string;
@@ -32,8 +32,8 @@ export function StudentFinancial({ payments }: Props) {
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [paymentType, setPaymentType] = useState<'pix' | 'boleto' | null>(null);
 
-  const totalPaid = payments.filter(p => p.is_paid).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
-  const nextPending = payments.find(p => !p.is_paid);
+  const totalPaid = payments.filter(p => p.ispaid).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const nextPending = payments.find(p => !p.ispaid);
 
   const handlePay = async (paymentId: string, method: 'pix' | 'boleto') => {
     if (!profile) {
@@ -78,7 +78,7 @@ export function StudentFinancial({ payments }: Props) {
         <div className="bg-card shadow-card rounded-xl p-5">
           <div className="text-xs text-muted-foreground font-medium mb-1">Total Pago (2025)</div>
           <div className="text-2xl font-bold text-success">R$ {totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</div>
-          <div className="text-xs text-muted-foreground">{payments.filter(p => p.is_paid).length} parcelas</div>
+          <div className="text-xs text-muted-foreground">{payments.filter(p => p.ispaid).length} parcelas</div>
         </div>
         <div className="bg-card shadow-card rounded-xl p-5">
           <div className="text-xs text-muted-foreground font-medium mb-1">Mensalidade Padrão</div>
@@ -94,7 +94,7 @@ export function StudentFinancial({ payments }: Props) {
           <div className={`text-2xl font-bold ${nextPending ? "text-destructive" : "text-success"}`}>
             {nextPending ? "Pendente" : "Em dia ✓"}
           </div>
-          <div className="text-xs text-foreground/60">{nextPending ? `Vencimento: ${new Date(nextPending.due_date).toLocaleDateString()}` : "Sem débitos"}</div>
+          <div className="text-xs text-foreground/60">{nextPending ? `Vencimento: ${new Date(nextPending.duedate).toLocaleDateString()}` : "Sem débitos"}</div>
         </div>
       </div>
 
@@ -103,7 +103,7 @@ export function StudentFinancial({ payments }: Props) {
           <div className="flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-warning flex-shrink-0" />
             <div>
-              <div className="font-semibold text-foreground text-sm">Mensalidade Aberta — Vencimento: {new Date(nextPending.due_date).toLocaleDateString()}</div>
+              <div className="font-semibold text-foreground text-sm">Mensalidade Aberta — Vencimento: {new Date(nextPending.duedate).toLocaleDateString()}</div>
               <div className="text-xs text-muted-foreground">Selecione uma forma de pagamento abaixo.</div>
             </div>
           </div>
@@ -176,8 +176,8 @@ export function StudentFinancial({ payments }: Props) {
             </thead>
             <tbody className="divide-y divide-border">
               {payments.map((p) => {
-                const isPaid = p.is_paid;
-                const date = new Date(p.due_date);
+                const isPaid = p.ispaid;
+                const date = new Date(p.duedate);
                 const isAtrasado = !isPaid && date < new Date();
                 const status = isPaid ? statusConfig.pago : (isAtrasado ? statusConfig.atrasado : statusConfig.pendente);
                 const Icon = status.icon;

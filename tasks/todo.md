@@ -14,7 +14,7 @@
 
 ---
 
-## [ ] PHASE 2 — Consistência de Nomes V5 (PRE-REQUISITO DO BANCO)
+## [ ] PHASE 2 — Consistência de Nomes V5 (PRE-REQUISITO DO BANCO) — CONCLUÍDA (FRONTEND)
 
 Contexto: A V5 padronizou todos os nomes de colunas do banco removendo underscores.
 Os hooks principais já foram atualizados, mas 4 componentes ainda referenciam nomes antigos.
@@ -34,7 +34,7 @@ Regra geral de substituição:
 
 ### Ordem obrigatória de execução:
 
-- [ ] TASK 10 — Corrigir ManagerUsers.tsx
+- [x] TASK 10 — Corrigir ManagerUsers.tsx
 
   Arquivo: src/components/manager/ManagerUsers.tsx
 
@@ -47,7 +47,7 @@ Regra geral de substituição:
 
   Verificar: grep no arquivo não deve encontrar nenhum full_name ou student_card_id após a correção.
 
-- [ ] TASK 11 — Corrigir StudentGrades.tsx
+- [x] TASK 11 — Corrigir StudentGrades.tsx
 
   Arquivo: src/components/student/StudentGrades.tsx
 
@@ -56,7 +56,7 @@ Regra geral de substituição:
 
   Verificar: grep no arquivo não deve encontrar nenhum grade_value após a correção.
 
-- [ ] TASK 12 — Corrigir StudentFinancial.tsx
+- [x] TASK 12 — Corrigir StudentFinancial.tsx
 
   Arquivo: src/components/student/StudentFinancial.tsx
 
@@ -70,7 +70,7 @@ Regra geral de substituição:
 
   Verificar: grep no arquivo não deve encontrar is_paid, due_date ou invoice_url após a correção.
 
-- [ ] TASK 13 — Corrigir TeacherGrades.tsx
+- [x] TASK 13 — Corrigir TeacherGrades.tsx
 
   Arquivo: src/components/teacher/TeacherGrades.tsx
 

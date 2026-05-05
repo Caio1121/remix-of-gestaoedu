@@ -45,11 +45,11 @@ export function ManagerUsers({ kpis }: Props) {
   type TabType = "alunos" | "docentes";
 
   const filteredStudents = (realStudents || []).filter(s =>
-    s.full_name?.toLowerCase().includes(search.toLowerCase())
+    s.fullname?.toLowerCase().includes(search.toLowerCase())
   );
 
   const filteredTeachers = (realTeachers || []).filter(t =>
-    t.full_name?.toLowerCase().includes(search.toLowerCase())
+    t.fullname?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -178,11 +178,11 @@ export function ManagerUsers({ kpis }: Props) {
               <div key={s.id} className="px-5 py-3.5 flex items-center justify-between hover:bg-muted/20 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full gradient-brand flex items-center justify-center text-primary-foreground text-xs font-bold">
-                    {s.full_name?.split(" ").map((n: string) => n[0]).slice(0, 2).join("") || "AL"}
+                    {s.fullname?.split(" ").map((n: string) => n[0]).slice(0, 2).join("") || "AL"}
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-foreground">{s.full_name}</div>
-                    <div className="text-xs text-muted-foreground">{s.student_card_id || "Sem Matrícula"}</div>
+                    <div className="text-sm font-medium text-foreground">{s.fullname}</div>
+                    <div className="text-xs text-muted-foreground">{s.studentcardid || "Sem Matrícula"}</div>
                   </div>
                 </div>
                 <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-success-light text-success">
@@ -197,10 +197,10 @@ export function ManagerUsers({ kpis }: Props) {
               <div key={t.id} className="px-5 py-3.5 flex items-center justify-between hover:bg-muted/20 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-accent-foreground text-xs font-bold">
-                    {t.full_name?.split(" ").map((n: string) => n[0]).slice(0, 2).join("") || "PR"}
+                    {t.fullname?.split(" ").map((n: string) => n[0]).slice(0, 2).join("") || "PR"}
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-foreground">{t.full_name}</div>
+                    <div className="text-sm font-medium text-foreground">{t.fullname}</div>
                     <div className="text-xs text-muted-foreground">Docente Regular</div>
                   </div>
                 </div>

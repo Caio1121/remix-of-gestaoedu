@@ -39,19 +39,19 @@ export function TeacherGrades({ students, classes, selectedClass, onClassChange 
         const finalStr = getFinal(s.id)
         const finalVal = finalStr && finalStr !== 'Inválido' ? parseFloat(finalStr) : null
         return {
-          student_id: s.id,
-          class_id: selectedClass,
+          studentid: s.id,
+          classid: selectedClass,
           av1: av1Val,
           av2: av2Val,
           av3: av3Val,
-          grade_value: finalVal,
-          updated_at: new Date().toISOString(),
+          gradevalue: finalVal,
+          updatedat: new Date().toISOString(),
         }
       })
 
       const { error } = await supabase
         .from('grades')
-        .upsert(upsertData, { onConflict: 'student_id,class_id' })
+        .upsert(upsertData, { onConflict: 'studentid,classid' })
 
       if (error) throw error
 

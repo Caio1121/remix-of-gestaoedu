@@ -9,9 +9,9 @@ function GradeCell({ value }: { value: number | null | undefined }) {
 }
 
 export function StudentGrades({ grades }: Props) {
-  const withValue = grades.filter(g => g.grade_value !== null);
-  const avg = withValue.length ? withValue.reduce((s, g) => s + Number(g.grade_value || 0), 0) / withValue.length : 0;
-  const approved = withValue.filter(g => Number(g.grade_value || 0) >= 6).length;
+  const withValue = grades.filter(g => g.gradevalue !== null);
+  const avg = withValue.length ? withValue.reduce((s, g) => s + Number(g.gradevalue || 0), 0) / withValue.length : 0;
+  const approved = withValue.filter(g => Number(g.gradevalue || 0) >= 6).length;
 
   return (
     <div className="space-y-6">
@@ -53,14 +53,14 @@ export function StudentGrades({ grades }: Props) {
             </thead>
             <tbody className="divide-y divide-border">
               {grades.map((g) => {
-                const val = Number(g.grade_value || 0);
-                const status = g.grade_value === null ? "cursando" : val >= 6 ? "aprovado" : "reprovado";
+                const val = Number(g.gradevalue || 0);
+                const status = g.gradevalue === null ? "cursando" : val >= 6 ? "aprovado" : "reprovado";
                 return (
                   <tr key={g.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-5 py-3.5">
                       <div className="text-sm font-medium text-foreground">{g.classes?.name || "Disciplina"}</div>
                     </td>
-                    <td className="text-center px-3 py-3.5"><GradeCell value={g.grade_value} /></td>
+                    <td className="text-center px-3 py-3.5"><GradeCell value={g.gradevalue} /></td>
                     <td className="text-center px-3 py-3.5">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
                         status === "aprovado" ? "bg-success-light text-success" :
@@ -84,7 +84,7 @@ export function StudentGrades({ grades }: Props) {
         <h3 className="font-semibold text-foreground mb-4">Desempenho por Disciplina</h3>
         <div className="space-y-3">
           {grades.map((g) => {
-            const val = Number(g.grade_value || 0);
+            const val = Number(g.gradevalue || 0);
             const pct = (val / 10) * 100;
             const color = val >= 7 ? "bg-success" : val >= 5 ? "bg-warning" : "bg-destructive";
             return (
