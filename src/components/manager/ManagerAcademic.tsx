@@ -1,13 +1,41 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-interface CoursePerf { course: string; avg: number; students: number }
+interface CoursePerf { id: string; course: string; avg: number; students: number }
 interface Props {
   courses: CoursePerf[];
   kpis: { attendanceRate: number; approvalRate: number; absenteeismRate: number };
 }
 
+import { Trash2, Lock, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useDeleteClass } from "@/hooks/useDashboardData";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { TooltipProvider, Tooltip as UITooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useState } from "react";
+
 export function ManagerAcademic({ courses, kpis }: Props) {
-  const overallAvg = (courses.reduce((s, c) => s + c.avg, 0) / courses.length).toFixed(2);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const deleteClassMutation = useDeleteClass();
+
+  const handleDelete = async () => {
+    if (selectedClassId) {
+      await deleteClassMutation.mutateAsync(selectedClassId);
+      setIsConfirmOpen(false);
+      setSelectedClassId(null);
+    }
+  };
+
+  const overallAvg = (courses.reduce((s, c) => s + c.avg, 0) / courses.length || 0).toFixed(2);
 
   return (
     <div className="space-y-6">
@@ -75,37 +103,93 @@ export function ManagerAcademic({ courses, kpis }: Props) {
           <h3 className="font-semibold text-foreground">Indicadores por Curso</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-muted/50">
-                {["Curso", "Alunos", "Média Geral", "Situação"].map(h => (
-                  <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {courses.map((c) => (
-                <tr key={c.course} className="hover:bg-muted/20">
-                  <td className="px-5 py-3 text-sm font-medium text-foreground">{c.course}</td>
-                  <td className="px-5 py-3 text-sm text-muted-foreground">{c.students}</td>
-                  <td className="px-5 py-3">
-                    <span className={`text-base font-bold ${c.avg >= 7.5 ? "text-success" : c.avg >= 6.5 ? "text-warning" : "text-destructive"}`}>
-                      {c.avg.toFixed(1)}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3">
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${c.avg >= 7.5 ? "bg-success-light text-success" :
-                        c.avg >= 6.5 ? "bg-warning-light text-warning" : "bg-destructive-light text-destructive"
-                      }`}>
-                      {c.avg >= 7.5 ? "Excelente" : c.avg >= 6.5 ? "Regular" : "Atenção"}
-                    </span>
-                  </td>
+          <TooltipProvider>
+            <table className="w-full">
+              <thead>
+                <tr className="bg-muted/50">
+                  {["Curso", "Alunos", "Média Geral", "Situação", "Ações"].map(h => (
+                    <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {courses.map((c) => (
+                  <tr key={c.id} className="hover:bg-muted/20">
+                    <td className="px-5 py-3 text-sm font-medium text-foreground">{c.course}</td>
+                    <td className="px-5 py-3 text-sm text-muted-foreground">{c.students}</td>
+                    <td className="px-5 py-3">
+                      <span className={`text-base font-bold ${c.avg >= 7.5 ? "text-success" : c.avg >= 6.5 ? "text-warning" : "text-destructive"}`}>
+                        {c.avg.toFixed(1)}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${c.avg >= 7.5 ? "bg-success-light text-success" :
+                          c.avg >= 6.5 ? "bg-warning-light text-warning" : "bg-destructive-light text-destructive"
+                        }`}>
+                        {c.avg >= 7.5 ? "Excelente" : c.avg >= 6.5 ? "Regular" : "Atenção"}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <UITooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={`h-8 px-2 ${c.students > 0 ? "text-muted-foreground/30" : "text-destructive hover:text-destructive hover:bg-destructive/10"}`}
+                              disabled={c.students > 0 || deleteClassMutation.isPending}
+                              onClick={() => {
+                                setSelectedClassId(c.id);
+                                setIsConfirmOpen(true);
+                              }}
+                            >
+                              {deleteClassMutation.isPending && selectedClassId === c.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : c.students > 0 ? (
+                                <Lock className="w-4 h-4" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                              <span className="ml-1.5">Excluir</span>
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">
+                            {c.students > 0 
+                              ? "Apenas turmas sem alunos podem ser excluídas" 
+                              : "Excluir turma"}
+                          </p>
+                        </TooltipContent>
+                      </UITooltip>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TooltipProvider>
         </div>
       </div>
+
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão da turma</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta turma? Esta ação é permanente e não poderá ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedClassId(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir turma
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { Send, User, MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useChatMessages, useSendMessage } from "@/hooks/useChat";
-import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,7 +17,7 @@ export function AdminChat({ receiverId, onClose }: AdminChatProps) {
     const [selectedReceiver, setSelectedReceiver] = useState<string | null>(receiverId || null);
     const { data: messages = [] } = useChatMessages(selectedReceiver || "");
     const sendMessage = useSendMessage();
-    const { data: profile } = useProfile();
+    const { profile } = useAuth();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [receivers, setReceivers] = useState<any[]>([]);
     

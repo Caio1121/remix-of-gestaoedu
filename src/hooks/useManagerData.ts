@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { PASSING_GRADE } from '@/types';
+import { managerService } from '@/services/managerService';
+import { financialService } from '@/services/financialService';
+import { gradesService } from '@/services/gradesService';
 
 export interface ManagerKPI {
   totalStudents: number;
@@ -13,67 +14,15 @@ export interface ManagerKPI {
   absenteeismRate: number;
 }
 
-/**
- * Retorna KPIs agregados do gestor.
- * Executa 6 queries paralelas via Promise.all:
- * contagem de alunos, professores, turmas + dados de frequência, notas e financeiro.
- * @returns `totalStudents`, `totalTeachers`, `totalClasses`,
- *          `attendanceRate`, `approvalRate`, `absenteeismRate`,
- *          `revenueMonth` (R$), `revenueDefault` (% inadimplência)
- */
 export const useManagerData = () =>
   useQuery<ManagerKPI>({
     queryKey: ['manager-data'],
     queryFn: async () => {
-      const [
-        { count: studentsCount },
-        { count: teachersCount },
-        { count: classesCount },
-        { count: attTotal },
-        { count: attPresent },
-        { count: gradeTotal },
-        { count: gradeApproved },
-        { data: finData },
-      ] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'aluno'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'docente'),
-        supabase.from('classes').select('*', { count: 'exact', head: true }),
-        supabase.from('attendance').select('*', { count: 'exact', head: true }),
-        supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('status', 'presente'),
-        supabase.from('grades').select('*', { count: 'exact', head: true }),
-        supabase.from('grades').select('*', { count: 'exact', head: true }).gte('gradevalue', PASSING_GRADE),
-        supabase.from('financialrecords').select('amount, ispaid'),
-      ]);
-
-      const attRate = attTotal && attTotal > 0
-        ? (Number(attPresent) / Number(attTotal)) * 100
-        : 0;
-
-      const appRate = gradeTotal && gradeTotal > 0
-        ? (Number(gradeApproved) / Number(gradeTotal)) * 100
-        : 0;
-
-      let revMonth = 0;
-      let revDefault = 0;
-      if (finData && finData.length > 0) {
-        revMonth = finData
-          .filter((f: any) => f.ispaid)
-          .reduce((acc: number, curr: any) => acc + Number(curr.amount), 0);
-        revDefault = (finData.filter((f: any) => !f.ispaid).length / finData.length) * 100;
-      }
-
-      return {
-        totalStudents: studentsCount ?? 0,
-        totalTeachers: teachersCount ?? 0,
-        totalClasses: classesCount ?? 0,
-        attendanceRate: Math.round(attRate),
-        approvalRate: Math.round(appRate),
-        revenueMonth: revMonth,
-        revenueDefault: Number(revDefault.toFixed(1)),
-        absenteeismRate: Math.round(100 - attRate),
-      };
+      const { data, error } = await managerService.getDashboardKPIs();
+      if (error) throw error;
+      return data as ManagerKPI;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 5 * 60 * 1000,
   });
 
 /**
@@ -85,9 +34,7 @@ export const useRevenueData = () =>
   useQuery({
     queryKey: ['revenue-chart'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('financialrecords')
-        .select('amount, ispaid, duedate');
+      const { data, error } = await financialService.getAllFinancialRecords();
       if (error) return [];
 
       const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -119,34 +66,35 @@ export const useCoursePerformance = () =>
   useQuery({
     queryKey: ['course-performance'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('grades')
-        .select('gradevalue, av1, av2, av3, studentid, classid, classes!inner(name)');
+      const { data, error } = await gradesService.getAllGradesWithClasses();
       if (error) return [];
 
       const groupedByClass: Record<string, {
+        id: string;
+        name: string;
         sum: number;
         count: number;
         students: Set<string>;
       }> = {};
 
       data?.forEach((g: any) => {
-        const className = g.classes?.name ?? 'Geral';
-        if (!groupedByClass[className])
-          groupedByClass[className] = { sum: 0, count: 0, students: new Set<string>() };
+        const classId = g.classid;
+        if (!groupedByClass[classId])
+          groupedByClass[classId] = { id: classId, name: g.classes?.name ?? 'Geral', sum: 0, count: 0, students: new Set<string>() };
 
         const avgs = [g.av1, g.av2, g.av3].filter((v) => v !== null && v !== undefined);
         const gradeVal = avgs.length > 0
           ? avgs.reduce((s: number, v: any) => s + Number(v), 0) / avgs.length
           : Number(g.gradevalue) || 0;
 
-        groupedByClass[className].sum += gradeVal;
-        groupedByClass[className].count += 1;
-        groupedByClass[className].students.add(g.studentid);
+        groupedByClass[classId].sum += gradeVal;
+        groupedByClass[classId].count += 1;
+        groupedByClass[classId].students.add(g.studentid);
       });
 
-      return Object.entries(groupedByClass).map(([name, data]) => ({
-        course: name,
+      return Object.values(groupedByClass).map((data) => ({
+        id: data.id,
+        course: data.name,
         avg: Number((data.sum / data.count).toFixed(1)),
         students: data.students.size,
       }));

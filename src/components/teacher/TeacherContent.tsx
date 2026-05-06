@@ -2,8 +2,9 @@ import { useState } from "react";
 import { FileText, Film, Link2, Presentation, Plus, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTeacherClasses, useMaterials, useUploadMaterial } from "@/hooks/useDashboardData";
-import { useProfile } from "@/hooks/useProfile";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { materialsService } from "@/services/materialsService";
+import { handleSupabaseError } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -15,7 +16,7 @@ const typeConfig = {
 };
 
 export function TeacherContent() {
-  const { data: profile } = useProfile();
+  const { profile } = useAuth();
   const { data: classes, isLoading: classesLoading } = useTeacherClasses(profile?.id);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
 
@@ -86,7 +87,7 @@ export function TeacherContent() {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("materials").delete().eq("id", id);
+    const { error } = await materialsService.deleteMaterial(id);
     if (!error) {
       toast.success("Removido", { description: "Material removido com sucesso." });
       refetch();

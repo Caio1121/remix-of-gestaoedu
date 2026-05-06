@@ -1,5 +1,4 @@
 import { Navigate } from 'react-router-dom'
-import { useProfile } from '@/hooks/useProfile'
 import { useAuth } from '@/contexts/AuthContext'
 import { UserRole } from '@/types'
 
@@ -9,10 +8,9 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { data: profile, isLoading: profileLoading } = useProfile();
-  const { loading: authLoading, mfaLevel } = useAuth();
+  const { profile, loading, mfaLevel } = useAuth();
 
-  if (profileLoading || authLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-muted-foreground text-sm">

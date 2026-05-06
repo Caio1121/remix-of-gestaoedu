@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { LayoutDashboard, Users, BookOpen, CalendarCheck, Upload, BarChart2, MessageCircle } from "lucide-react";
 import { useTeacherClasses, useClassStudents } from "@/hooks/useDashboardData";
-import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TeacherHome } from "@/components/teacher/TeacherHome";
@@ -27,7 +27,7 @@ const navItems = [
 export default function TeacherDashboard() {
   const [activeItem, setActiveItem] = useState("home");
 
-  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { profile, loading: profileLoading } = useAuth();
   const { data: classes, isLoading: classesLoading } = useTeacherClasses(profile?.id);
 
   const [selectedClassId, setSelectedClassId] = useState<string | undefined>(undefined);

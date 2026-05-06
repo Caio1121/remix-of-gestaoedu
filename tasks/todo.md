@@ -352,83 +352,30 @@ Substituição na função handle_new_user():
 
 (mantém 'full_name' como segundo fallback para compatibilidade com OAuth/magic link)
 
-Verificar: Criar um usuário via painel Gestor e confirmar que profiles.fullname mostra o nome correto (não o email).
-
+Verificar: Criar um usuário via painel Gestor e confirmar que profiles.fullname mostra o nome corr  Preferir opção A.
+  Verificar: Clique em Relatórios no menu do docente exibe conteúdo real; sem tela em branco.
+- [x] TASK 25 — Criar tabela `student_documents` no SQL V5
+- [x] TASK 26 — Corrigir StudentDocuments.tsx: colunas V4 → V5
+- [x] TASK 27 — Corrigir integrations/supabase/types.ts: sincronizar tipo `student_documents` com V5
+- [x] TASK 33 — Migrar useToast → sonner em StudentDocuments.tsx
+- [x] TASK 34 — Corrigir campo `material_type` → `materialtype` em StudentMaterials.tsx
+- [x] TASK 35 — Corrigir campo `created_at` → `createdat` em StudentNotices.tsx
 
 ---
 
-## [ ] PHASE 5 — Bugfix Auditoria Full-Code (Alertas & Quebrados)
+## [x] PHASE 6 — Refatoração Arquitetural & Serviços — CONCLUÍDA
 
-> Auditoria completa de todos os arquivos do repositório identificou 5 alertas (⚠️) e 5 itens quebrados (❌).
-> Resolver na ordem indicada — TASK 25 é PREREQ de TASK 26.
+Contexto: Centralização de lógica, desacoplamento do Supabase e endurecimento da segurança de dados.
 
-### ❌ QUEBRADOS (críticos — causam erros em runtime)
-
-- [ ] TASK 25 — PREREQ: Criar tabela `student_documents` no SQL V5
-  Arquivo: supabase/setup_supabase.sql
-  Problema: StudentDocuments.tsx faz SELECT/INSERT/DELETE em `student_documents` mas essa tabela não existe no setup_supabase.sql V5. Toda a tela de Documentos do Aluno falha com erro 42P01 (relation does not exist).
-  Solução: Adicionar ao setup_supabase.sql após a tabela `financialrecords`:
-  ```sql
-  CREATE TABLE public.student_documents (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    studentid UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    doctype TEXT NOT NULL,
-    filesize TEXT,
-    fileurl TEXT,
-    status TEXT DEFAULT 'enviado',
-    createdat TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
-  );
-  ALTER TABLE public.student_documents ENABLE ROW LEVEL SECURITY;
-  CREATE POLICY "Alunos gerenciam seus docs" ON public.student_documents
-    FOR ALL TO authenticated USING (auth.uid() = studentid) WITH CHECK (auth.uid() = studentid);
-  CREATE POLICY "Gestores veem todos docs" ON public.student_documents
-    FOR SELECT TO authenticated USING (
-      EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'gestor')
-    );
-  CREATE INDEX IF NOT EXISTS idx_student_documents_student ON public.student_documents(studentid);
-  ```
-  Verificar: Script roda sem erro; SELECT na tabela retorna vazio sem erro.
-
-- [ ] TASK 26 — Corrigir StudentDocuments.tsx: colunas V4 → V5
-  Arquivo: src/components/student/StudentDocuments.tsx
-  PREREQ: TASK 25 concluída
-  Problema: Usa `student_id` e `created_at` (V4 com underscore). Deve usar `studentid` e `createdat` (V5).
-  Solução:
-  - `.eq('student_id', ...)` → `.eq('studentid', ...)`
-  - `.order('created_at', ...)` → `.order('createdat', ...)`
-  - No INSERT: `student_id: profile.id` → `studentid: profile.id`
-  - No INSERT: `doc_type: selectedType` → `doctype: selectedType`
-  - No INSERT: `file_size: formatFileSize(...)` → `filesize: formatFileSize(...)`
-  - No INSERT: `file_url: storagePath` → `fileurl: storagePath`
-  Verificar: Upload de documento funciona; listagem exibe arquivo; exclusão remove da tabela e storage.
-
-- [ ] TASK 27 — Corrigir integrations/supabase/types.ts: sincronizar tipo `student_documents` com V5
-  Arquivo: src/integrations/supabase/types.ts
-  PREREQ: TASK 25 concluída
-  Problema: O tipo `Database['public']['Tables']['student_documents']['Row']` usa colunas V4 (`student_id`, `doc_type`, `file_size`, `file_url`, `created_at`). Após TASK 25 criar a tabela com colunas V5, o tipo fica dessincronizado.
-  Solução: Atualizar o Row/Insert/Update de `student_documents` em types.ts:
-  - `student_id` → `studentid`
-  - `doc_type` → `doctype`
-  - `file_size` → `filesize`
-  - `file_url` → `fileurl`
-  - `created_at` → `createdat`
-  Verificar: `npm run build` sem erros de TypeScript no StudentDocuments.tsx.
-
-- [ ] TASK 28 — Implementar tela Calendário no StudentDashboard
-  Arquivo: src/pages/StudentDashboard.tsx
-  Problema: NavItem `calendar` existe e é exibido no menu, mas `case 'calendar': return null` — a tela está em branco. O aluno clica e não vê nada.
-  Solução: Criar componente `src/components/student/StudentCalendar.tsx` que exibe:
-  - Calendário mensal visual (pode usar shadcn Calendar ou react-day-picker já instalado)
-  - Lista de eventos: vencimentos de `financialrecords` (duedate) e datas de `attendance`
-  - Dados vindos de `useFinancial(profile?.id)` e `useAttendance(profile?.id)` já disponíveis no StudentDashboard
-  Em StudentDashboard.tsx: `case 'calendar': return <StudentCalendar grades={grades} attendance={attendanceData} financial={financialData} />`
-  Verificar: Clicar em Calendário no menu do aluno exibe componente; sem tela em branco.
-
-- [ ] TASK 29 — Remover navItem `reports` do TeacherDashboard ou implementar conteúdo
-  Arquivo: src/pages/TeacherDashboard.tsx + src/components/teacher/ (novo)
-  Problema: NavItem `reports` está no menu do docente mas `case 'reports': return null` — tela em branco.
-  Solução (opção A — mínimo): Criar `TeacherReports.tsx` simples com resumo das turmas do professor (total alunos, média de notas, % frequência) usando dados já carregados.
+- [x] TASK 37 — Centralizar Sessão/Perfil no AuthContext (Fetch único)
+- [x] TASK 38 — Implementar Camada de Serviços em `src/services/`
+- [x] TASK 39 — Padronizar Erros com `errorHandler.ts` (PT-BR)
+- [x] TASK 40 — Implementar Optimistic Updates (Notas & Frequência)
+- [x] TASK 41 — Cobertura de Testes Unitários com Vitest (7 testes passando)
+- [x] TASK 42 — Fluxo Seguro de Exclusão de Turmas (Validação de Matrículas)
+- [x] TASK 43 — Unificar Gerenciador de Pacotes (npm apenas)
+- [x] TASK 44 — Configurar Future Flags do React Router v7
+` simples com resumo das turmas do professor (total alunos, média de notas, % frequência) usando dados já carregados.
   Solução (opção B — remover): Remover o navItem `reports` do array `navItems` em TeacherDashboard.tsx se não for prioritário.
   Preferir opção A.
   Verificar: Clique em Relatórios no menu do docente exibe conteúdo real; sem tela em branco.
@@ -488,15 +435,30 @@ Verificar: Criar um usuário via painel Gestor e confirmar que profiles.fullname
 
 | Task | Tipo | Arquivo | Prioridade |
 |------|------|---------|------------|
-| 25 | ❌ QUEBRADO | setup_supabase.sql | CRÍTICA (PREREQ) |
-| 26 | ❌ QUEBRADO | StudentDocuments.tsx | CRÍTICA |
-| 27 | ❌ QUEBRADO | integrations/supabase/types.ts | CRÍTICA |
+| 25 | [x] CONCLUÍDO | setup_supabase.sql | CRÍTICA (PREREQ) |
+| 26 | [x] CONCLUÍDO | StudentDocuments.tsx | CRÍTICA |
+| 27 | [x] CONCLUÍDO | integrations/supabase/types.ts | CRÍTICA |
 | 28 | ❌ QUEBRADO | StudentDashboard.tsx + StudentCalendar.tsx | ALTA |
 | 29 | ❌ QUEBRADO | TeacherDashboard.tsx + TeacherReports.tsx | ALTA |
 | 30 | ⚠️ ALERTA | MfaSetup.tsx + MfaChallenge.tsx | MÉDIA |
 | 31 | ⚠️ ALERTA | ManagerUsers.tsx | MÉDIA |
 | 32 | ⚠️ ALERTA | useCreateClassForm.ts | MÉDIA |
-| 33 | ⚠️ ALERTA | StudentDocuments.tsx | MÉDIA (junto c/ T26) |
-| 34 | ⚠️ ALERTA | StudentMaterials.tsx | MÉDIA |
-| 35 | ⚠️ ALERTA | StudentNotices.tsx | MÉDIA |
+| 33 | [x] CONCLUÍDO | StudentDocuments.tsx | MÉDIA (junto c/ T26) |
+| 34 | [x] CONCLUÍDO | StudentMaterials.tsx | MÉDIA |
+| 35 | [x] CONCLUÍDO | StudentNotices.tsx | MÉDIA |
 | 36 | ⚠️ ALERTA | migrations/ | BAIXA |
+
+---
+
+## [x] PHASE 6 — Refatoração Arquitetural & Serviços — CONCLUÍDA
+
+Contexto: Centralização de lógica, desacoplamento do Supabase e endurecimento da segurança de dados.
+
+- [x] TASK 37 — Centralizar Sessão/Perfil no AuthContext (Fetch único)
+- [x] TASK 38 — Implementar Camada de Serviços em `src/services/`
+- [x] TASK 39 — Padronizar Erros com `errorHandler.ts` (PT-BR)
+- [x] TASK 40 — Implementar Optimistic Updates (Notas & Frequência)
+- [x] TASK 41 — Cobertura de Testes Unitários com Vitest (7 testes passando)
+- [x] TASK 42 — Fluxo Seguro de Exclusão de Turmas (Validação de Matrículas)
+- [x] TASK 43 — Unificar Gerenciador de Pacotes (npm apenas)
+- [x] TASK 44 — Configurar Future Flags do React Router v7

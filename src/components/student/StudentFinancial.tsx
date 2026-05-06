@@ -2,7 +2,7 @@ import { useState } from "react";
 import { DollarSign, Download, CheckCircle, AlertCircle, Clock, CreditCard, QrCode, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGeneratePayment } from "@/hooks/useDashboardData";
-import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 interface PaymentRecord {
@@ -26,7 +26,7 @@ const statusConfig = {
 };
 
 export function StudentFinancial({ payments }: Props) {
-  const { data: profile } = useProfile();
+  const { profile } = useAuth();
   const generatePayment = useGeneratePayment();
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [paymentType, setPaymentType] = useState<'pix' | 'boleto' | null>(null);

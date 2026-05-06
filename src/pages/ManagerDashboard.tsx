@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { LayoutDashboard, Users, BarChart2, DollarSign, GraduationCap, Megaphone, MessageCircle } from "lucide-react";
 import { useManagerData, useRevenueData, useCoursePerformance, useAnnouncements } from "@/hooks/useDashboardData";
-import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
 import { ManagerHome } from "@/components/manager/ManagerHome";
 import { ManagerFinancial } from "@/components/manager/ManagerFinancial";
 import { ManagerAcademic } from "@/components/manager/ManagerAcademic";
@@ -25,7 +25,7 @@ const navItems = [
 export default function ManagerDashboard() {
   const [activeItem, setActiveItem] = useState("home");
 
-  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { profile, loading: profileLoading } = useAuth();
   const { data: kpis, isLoading: kpisLoading } = useManagerData();
   const { data: revenueData, isLoading: revenueLoading } = useRevenueData();
   const { data: coursesData, isLoading: coursesLoading } = useCoursePerformance();

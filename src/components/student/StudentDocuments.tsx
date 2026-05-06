@@ -1,8 +1,9 @@
 import { useState, useRef } from "react";
 import { Upload, File, Trash2, Loader2, Download } from "lucide-react";
-import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { documentsService } from "@/services/documentsService";
+import { handleSupabaseError } from "@/lib/errorHandler";
 import { toast } from "sonner";
 
 const docTypes = [
@@ -28,7 +29,7 @@ function formatFileSize(bytes: number): string {
 }
 
 export function StudentDocuments() {
-  const { data: profile } = useProfile();
+  const { profile } = useAuth();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedType, setSelectedType] = useState(docTypes[0]);
@@ -37,12 +38,7 @@ export function StudentDocuments() {
   const { data: docs = [], isLoading } = useQuery({
     queryKey: ["student-documents", profile?.id],
     queryFn: async () => {
-      if (!profile?.id) return [];
-      const { data, error } = await supabase
-        .from("student_documents")
-        .select("*")
-        .eq("studentid", profile.id)
-        .order("createdat", { ascending: false });
+      const { data, error } = await documentsService.getDocumentsByStudent(profile?.id || "");
       if (error) throw error;
       return data;
     },
@@ -68,20 +64,15 @@ export function StudentDocuments() {
         .upload(storagePath, file);
       if (uploadError) throw uploadError;
 
-      // 2. Get signed URL (bucket is private)
-      const { data: urlData } = await supabase.storage
-        .from("student-documents")
-        .createSignedUrl(storagePath, 60 * 60 * 24 * 365); // 1 year
-
-      // 3. Insert record in DB
-      const { error: dbError } = await supabase.from("student_documents").insert({
+      // 2. Insert record in DB
+      const { error: dbError } = await documentsService.createDocument({
         studentid: profile.id,
         name: file.name,
         doctype: selectedType,
-        filesize: formatFileSize(file.size),
         fileurl: storagePath,
-        status: "enviado",
+        filesize: formatFileSize(file.size)
       });
+
       if (dbError) {
         // Rollback: delete from storage
         await supabase.storage.from("student-documents").remove([storagePath]);
@@ -103,7 +94,7 @@ export function StudentDocuments() {
       if (doc.fileurl) {
         await supabase.storage.from("student-documents").remove([doc.fileurl]);
       }
-      const { error } = await supabase.from("student_documents").delete().eq("id", doc.id);
+      const { error } = await documentsService.deleteDocument(doc.id);
       if (error) throw error;
     },
     onSuccess: () => {

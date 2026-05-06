@@ -3,7 +3,7 @@ import { ClassStudent, TeacherClass } from "@/types";
 import { Save, CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useUpsertAttendance } from "@/hooks/useDashboardData";
 
 interface Props {
   students: ClassStudent[];
@@ -22,10 +22,9 @@ export function TeacherAttendance({ students, classes, selectedClass }: Props) {
     return init;
   });
   const [saved, setSaved] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const upsertAttendance = useUpsertAttendance();
 
   const handleSave = async () => {
-    setIsSubmitting(true);
     try {
       const records = students.map(s => ({
         studentid: s.id,
@@ -34,19 +33,16 @@ export function TeacherAttendance({ students, classes, selectedClass }: Props) {
         ispresent: attendance[s.id] === 'presente',
         status: attendance[s.id],
       }));
-      const { error } = await supabase
-        .from('attendance')
-        .upsert(records, { onConflict: 'studentid,classid,date' });
-      if (error) throw error;
+      
+      await upsertAttendance.mutateAsync(records);
       setSaved(true);
-      toast.success('Frequência salva!', { description: `${records.length} registros gravados.` });
       setTimeout(() => setSaved(false), 2000);
-    } catch (err: any) {
-      toast.error('Erro ao salvar', { description: err.message });
-    } finally {
-      setIsSubmitting(false);
+    } catch (err) {
+      // Erro já tratado no hook
     }
   };
+
+  const isSubmitting = upsertAttendance.isPending;
 
   const cls = classes.find(c => c.id === selectedClass) || classes[0];
 

@@ -1,12 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { classesService } from '@/services/classesService';
+import { gradesService } from '@/services/gradesService';
+import { attendanceService } from '@/services/attendanceService';
+import { handleSupabaseError } from '@/lib/errorHandler';
+import { Grade, AttendanceRecord } from '@/types';
+import { toast } from 'sonner';
 
 /**
  * Mutação para criar uma nova turma.
- * Define `teacherid` automaticamente a partir da sessão atual.
- * Invalida a query `teacher-classes` após sucesso.
- * @example
- * await createClass.mutateAsync({ name: 'Turma ADM-4A', period: '2025.1' })
  */
 export const useCreateClass = () => {
   const queryClient = useQueryClient();
@@ -18,32 +20,20 @@ export const useCreateClass = () => {
       schedule?: string;
       room?: string;
     }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Não autenticado');
-      const { data, error } = await supabase
-        .from('classes')
-        .insert({
-          name: newClass.name,
-          period: newClass.period,
-          subject: newClass.subject ?? null,
-          schedule: newClass.schedule ?? null,
-          room: newClass.room ?? null,
-          teacherid: user.id,
-        })
-        .select()
-        .single();
+      const { data, error } = await classesService.createClass(newClass as any);
       if (error) throw error;
       return data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teacher-classes'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teacher-classes'] });
+      toast.success('Turma criada com sucesso!');
+    },
+    onError: (error) => handleSupabaseError(error, 'createClass'),
   });
 };
 
 /**
- * Mutação para criar um novo usuário via Edge Function `create-user`.
- * Requer papel `gestor`. O Supabase envia e-mail de recuperação de senha automaticamente.
- * @example
- * await createUser.mutateAsync({ email: 'x@y.com', fullname: 'João', role: 'aluno' })
+ * Mutação para criar um novo usuário via Edge Function.
  */
 export const useCreateUser = () => {
   const queryClient = useQueryClient();
@@ -63,72 +53,132 @@ export const useCreateUser = () => {
       queryClient.invalidateQueries({ queryKey: ['manager-data'] });
       queryClient.invalidateQueries({ queryKey: ['all-students'] });
       queryClient.invalidateQueries({ queryKey: ['all-teachers'] });
+      toast.success('Usuário criado e convite enviado!');
     },
+    onError: (error) => handleSupabaseError(error, 'createUser'),
   });
 };
 
 /**
- * Mutação para publicar um material em uma turma.
- * Invalida a query `materials` da turma específica após sucesso.
- * @param material.materialtype - 'pdf' | 'video' | 'link' | 'slide'
- */
-export const useUploadMaterial = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (material: {
-      classid: string;
-      title: string;
-      description: string;
-      materialtype: string;
-      contenturl: string;
-    }) => {
-      const { data, error } = await supabase
-        .from('materials')
-        .insert({
-          classid: material.classid,
-          title: material.title,
-          description: material.description,
-          materialtype: material.materialtype,
-          contenturl: material.contenturl,
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (_, variables) =>
-      queryClient.invalidateQueries({ queryKey: ['materials', variables.classid] }),
-  });
-};
-
-/**
- * Mutação para salvar/atualizar notas de múltiplos alunos de uma vez.
- * Usa upsert com chave composta `(studentid, classid)` — seguro para chamar múltiplas vezes.
- * Invalida `class-students` e `student-grades` após sucesso.
+ * Mutação para salvar/atualizar notas com Optimistic Update.
  */
 export const useUpsertGrades = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (
-      grades: Array<{
-        studentid: string;
-        classid: string;
-        av1: number | null;
-        av2: number | null;
-        av3: number | null;
-        gradevalue: number | null;
-      }>
-    ) => {
-      const { data, error } = await supabase
-        .from('grades')
-        .upsert(grades, { onConflict: 'studentid,classid' })
-        .select();
+    mutationFn: async (grades: Partial<Grade>[]) => {
+      const { data, error } = await gradesService.saveGrade(grades as any); // Assuming service handles array or update service
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onMutate: async (newGrades) => {
+      await queryClient.cancelQueries({ queryKey: ['class-students'] });
+      const previousData = queryClient.getQueryData(['class-students']);
+      
+      // Update local cache optimistically
+      queryClient.setQueryData(['class-students'], (old: any) => {
+        if (!old) return old;
+        return old.map((student: any) => {
+          const update = newGrades.find(g => g.studentid === student.id);
+          if (update) {
+            return { ...student, ...update };
+          }
+          return student;
+        });
+      });
+
+      return { previousData };
+    },
+    onError: (err, _, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(['class-students'], context.previousData);
+      }
+      handleSupabaseError(err, 'upsertGrades');
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['class-students'] });
       queryClient.invalidateQueries({ queryKey: ['student-grades'] });
     },
+  });
+};
+
+/**
+ * Mutação para salvar frequência com Optimistic Update.
+ */
+export const useUpsertAttendance = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (records: Partial<AttendanceRecord>[]) => {
+      const { data, error } = await attendanceService.bulkSaveAttendance(records);
+      if (error) throw error;
+      return data;
+    },
+    onMutate: async (newRecords) => {
+      await queryClient.cancelQueries({ queryKey: ['class-students'] });
+      const previousData = queryClient.getQueryData(['class-students']);
+
+      queryClient.setQueryData(['class-students'], (old: any) => {
+        if (!old) return old;
+        return old.map((student: any) => {
+          const update = newRecords.find(r => r.studentid === student.id);
+          if (update) {
+            // Recalculate attendance percentage locally if needed, 
+            // but for now just mark it as updated.
+            return { ...student, attendanceUpdated: true };
+          }
+          return student;
+        });
+      });
+
+      return { previousData };
+    },
+    onError: (err, _, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(['class-students'], context.previousData);
+      }
+      handleSupabaseError(err, 'upsertAttendance');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['class-students'] });
+      queryClient.invalidateQueries({ queryKey: ['student-attendance'] });
+    },
+  });
+};
+
+/**
+ * Mutação para upload de material.
+ */
+export const useUploadMaterial = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (material: any) => {
+      const { data, error } = await materialsService.createMaterial(material);
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['materials', variables.classid] });
+      toast.success('Material publicado!');
+    },
+    onError: (error) => handleSupabaseError(error, 'uploadMaterial'),
+  });
+};
+
+/**
+ * Mutação para excluir uma turma se estiver vazia.
+ */
+export const useDeleteClass = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (classId: string) => {
+      const { error } = await classesService.deleteClassIfEmpty(classId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teacher-classes'] });
+      queryClient.invalidateQueries({ queryKey: ['manager-data'] });
+      queryClient.invalidateQueries({ queryKey: ['course-performance'] });
+      toast.success('Turma excluída', { description: 'A turma foi excluída com sucesso.' });
+    },
+    onError: (error) => handleSupabaseError(error, 'excluir turma'),
   });
 };

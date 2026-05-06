@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { useFinancial, useMaterials, useAttendance, useGrades, useStudentEnrollments } from "@/hooks/useStudentData";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
-import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
 import { StudentHome } from "@/components/student/StudentHome";
 import { StudentGrades } from "@/components/student/StudentGrades";
 import { StudentFinancial } from "@/components/student/StudentFinancial";
@@ -35,7 +35,7 @@ const navItems = [
 export default function StudentDashboard() {
   const [activeItem, setActiveItem] = useState("home");
 
-  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { profile, loading: profileLoading } = useAuth();
   const { data: grades } = useGrades(profile?.id);
   const { data: payments } = useFinancial(profile?.id);
   const { data: notices } = useAnnouncements();
