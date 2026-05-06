@@ -93,7 +93,7 @@ export default function StudentDashboard() {
       case "materials": return <StudentMaterials materials={(materials || []) as any} />;
       case "documents": return <StudentDocuments />;
       case "notices": return <StudentNotices notices={(notices || []) as any} />;
-      case "calendar": return <StudentCalendar financial={(payments || []) as any} attendance={(attendanceData || []) as any} />;
+      case "calendar": return <StudentCalendar financial={(payments || []) as any} attendance={(attendanceRecords || []) as any} />;
       case "idcard": return <StudentIDCard student={studentData} />;
       case "chat": return <div className="p-4 max-w-2xl mx-auto"><AdminChat /></div>;
       default: return <StudentHome student={studentData} grades={(grades || []) as any} payments={(payments || []) as any} notices={(notices || []) as any} attendanceRate={studentAttendanceRate} onNavigate={setActiveItem} />;
