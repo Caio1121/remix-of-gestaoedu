@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { useProfile } from '@/hooks/useProfile'
+import { useAuth } from '@/contexts/AuthContext'
 import { UserRole } from '@/types'
 
 interface ProtectedRouteProps {
@@ -8,9 +9,10 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { data: profile, isLoading } = useProfile();
+  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { loading: authLoading, mfaLevel } = useAuth();
 
-  if (isLoading) {
+  if (profileLoading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-muted-foreground text-sm">
@@ -22,6 +24,11 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 
   if (!profile || profile.role !== requiredRole) {
     return <Navigate to="/" replace />
+  }
+
+  // Enforce MFA for docente and gestor
+  if (profile.role !== 'aluno' && mfaLevel !== 'aal2') {
+    return <Navigate to="/mfa-challenge" replace />
   }
 
   return <>{children}</>

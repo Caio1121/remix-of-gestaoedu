@@ -312,10 +312,21 @@ CREATE INDEX IF NOT EXISTS idx_announcements_targetrole ON public.announcements(
 CREATE INDEX IF NOT EXISTS idx_audit_log_record ON public.audit_log(tablename, recordid, changedat DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_log_actor ON public.audit_log(changedby, changedat DESC);
 CREATE INDEX IF NOT EXISTS idx_classes_subject ON public.classes(subject);
+CREATE INDEX IF NOT EXISTS idx_enrollments_class ON public.enrollments(classid);
 
 -- =============================================================
--- 8. AUTOMAÇÃO DE PERFIL
+-- 8. AUTOMAÇÕES (Updated At & Perfil)
 -- =============================================================
+CREATE OR REPLACE FUNCTION public.update_updatedat_column()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    NEW.updatedat = timezone('utc'::text, now());
+    RETURN NEW;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -354,7 +365,66 @@ CREATE TRIGGER on_auth_user_created
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- =============================================================
--- 9. REALTIME
+-- 9. AUDITORIA (Audit Log Triggers)
+-- =============================================================
+CREATE OR REPLACE FUNCTION public.process_audit_log()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        INSERT INTO public.audit_log (tablename, recordid, action, changedby, newdata)
+        VALUES (TG_TABLE_NAME, NEW.id, 'INSERT', auth.uid(), to_jsonb(NEW));
+        RETURN NEW;
+    ELSIF (TG_OP = 'UPDATE') THEN
+        INSERT INTO public.audit_log (tablename, recordid, action, changedby, olddata, newdata)
+        VALUES (TG_TABLE_NAME, OLD.id, 'UPDATE', auth.uid(), to_jsonb(OLD), to_jsonb(NEW));
+        RETURN NEW;
+    ELSIF (TG_OP = 'DELETE') THEN
+        INSERT INTO public.audit_log (tablename, recordid, action, changedby, olddata)
+        VALUES (TG_TABLE_NAME, OLD.id, 'DELETE', auth.uid(), to_jsonb(OLD));
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$;
+
+-- Triggers de auditoria para tabelas críticas
+DROP TRIGGER IF EXISTS audit_profiles ON public.profiles;
+CREATE TRIGGER audit_profiles AFTER INSERT OR UPDATE OR DELETE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.process_audit_log();
+
+DROP TRIGGER IF EXISTS audit_classes ON public.classes;
+CREATE TRIGGER audit_classes AFTER INSERT OR UPDATE OR DELETE ON public.classes FOR EACH ROW EXECUTE FUNCTION public.process_audit_log();
+
+DROP TRIGGER IF EXISTS audit_grades ON public.grades;
+CREATE TRIGGER audit_grades AFTER INSERT OR UPDATE OR DELETE ON public.grades FOR EACH ROW EXECUTE FUNCTION public.process_audit_log();
+
+DROP TRIGGER IF EXISTS audit_attendance ON public.attendance;
+CREATE TRIGGER audit_attendance AFTER INSERT OR UPDATE OR DELETE ON public.attendance FOR EACH ROW EXECUTE FUNCTION public.process_audit_log();
+
+DROP TRIGGER IF EXISTS audit_financialrecords ON public.financialrecords;
+CREATE TRIGGER audit_financialrecords AFTER INSERT OR UPDATE OR DELETE ON public.financialrecords FOR EACH ROW EXECUTE FUNCTION public.process_audit_log();
+
+-- Triggers de Updated At
+DROP TRIGGER IF EXISTS set_updatedat_profiles ON public.profiles;
+CREATE TRIGGER set_updatedat_profiles BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.update_updatedat_column();
+
+DROP TRIGGER IF EXISTS set_updatedat_classes ON public.classes;
+CREATE TRIGGER set_updatedat_classes BEFORE UPDATE ON public.classes FOR EACH ROW EXECUTE FUNCTION public.update_updatedat_column();
+
+DROP TRIGGER IF EXISTS set_updatedat_grades ON public.grades;
+CREATE TRIGGER set_updatedat_grades BEFORE UPDATE ON public.grades FOR EACH ROW EXECUTE FUNCTION public.update_updatedat_column();
+
+DROP TRIGGER IF EXISTS set_updatedat_attendance ON public.attendance;
+CREATE TRIGGER set_updatedat_attendance BEFORE UPDATE ON public.attendance FOR EACH ROW EXECUTE FUNCTION public.update_updatedat_column();
+
+DROP TRIGGER IF EXISTS set_updatedat_financialrecords ON public.financialrecords;
+CREATE TRIGGER set_updatedat_financialrecords BEFORE UPDATE ON public.financialrecords FOR EACH ROW EXECUTE FUNCTION public.update_updatedat_column();
+
+-- =============================================================
+-- 10. REALTIME
 -- =============================================================
 DO $$
 BEGIN
@@ -400,7 +470,7 @@ BEGIN
 END $$;
 
 -- =============================================================
--- 10. STORAGE — BUCKETS E POLÍTICAS
+-- 11. STORAGE — BUCKETS E POLÍTICAS
 -- =============================================================
 INSERT INTO storage.buckets (id, name, public) VALUES ('materials', 'materials', true)
     ON CONFLICT (id) DO NOTHING;

@@ -65,6 +65,7 @@ export type Database = {
           justificationfileurl: string | null
           status: string | null
           studentid: string | null
+          updatedby: string | null
         }
         Insert: {
           classid?: string | null
@@ -75,6 +76,7 @@ export type Database = {
           justificationfileurl?: string | null
           status?: string | null
           studentid?: string | null
+          updatedby?: string | null
         }
         Update: {
           classid?: string | null
@@ -85,6 +87,7 @@ export type Database = {
           justificationfileurl?: string | null
           status?: string | null
           studentid?: string | null
+          updatedby?: string | null
         }
         Relationships: [
           {
@@ -148,6 +151,9 @@ export type Database = {
           id: string
           name: string
           period: string
+          room: string | null
+          schedule: string | null
+          subject: string | null
           teacherid: string | null
         }
         Insert: {
@@ -155,6 +161,9 @@ export type Database = {
           id?: string
           name: string
           period: string
+          room?: string | null
+          schedule?: string | null
+          subject?: string | null
           teacherid?: string | null
         }
         Update: {
@@ -162,6 +171,9 @@ export type Database = {
           id?: string
           name?: string
           period?: string
+          room?: string | null
+          schedule?: string | null
+          subject?: string | null
           teacherid?: string | null
         }
         Relationships: [
@@ -216,27 +228,33 @@ export type Database = {
           createdat: string | null
           duedate: string
           id: string
-          invoiceurl: string | null
+          invoiceurl: string
           ispaid: boolean | null
           studentid: string | null
+          updatedat: string | null
+          updatedby: string | null
         }
         Insert: {
           amount?: number | null
           createdat?: string | null
           duedate: string
           id?: string
-          invoiceurl?: string | null
+          invoiceurl: string
           ispaid?: boolean | null
           studentid?: string | null
+          updatedat?: string | null
+          updatedby?: string | null
         }
         Update: {
           amount?: number | null
           createdat?: string | null
           duedate?: string
           id?: string
-          invoiceurl?: string | null
+          invoiceurl?: string
           ispaid?: boolean | null
           studentid?: string | null
+          updatedat?: string | null
+          updatedby?: string | null
         }
         Relationships: [
           {
@@ -253,25 +271,37 @@ export type Database = {
           classid: string | null
           feedback: string | null
           gradevalue: number | null
+          av1: number | null
+          av2: number | null
+          av3: number | null
           id: string
           studentid: string | null
           updatedat: string | null
+          updatedby: string | null
         }
         Insert: {
           classid?: string | null
           feedback?: string | null
           gradevalue?: number | null
+          av1?: number | null
+          av2?: number | null
+          av3?: number | null
           id?: string
           studentid?: string | null
           updatedat?: string | null
+          updatedby?: string | null
         }
         Update: {
           classid?: string | null
           feedback?: string | null
           gradevalue?: number | null
+          av1?: number | null
+          av2?: number | null
+          av3?: number | null
           id?: string
           studentid?: string | null
           updatedat?: string | null
+          updatedby?: string | null
         }
         Relationships: [
           {
@@ -335,6 +365,7 @@ export type Database = {
           id: string
           role: Database["public"]["Enums"]["user_role"] | null
           studentcardid: string | null
+          cpf: string | null
         }
         Insert: {
           createdat?: string
@@ -342,6 +373,7 @@ export type Database = {
           id: string
           role?: Database["public"]["Enums"]["user_role"] | null
           studentcardid?: string | null
+          cpf?: string | null
         }
         Update: {
           createdat?: string
@@ -349,6 +381,7 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["user_role"] | null
           studentcardid?: string | null
+          cpf?: string | null
         }
         Relationships: []
       }
@@ -387,6 +420,47 @@ export type Database = {
           {
             foreignKeyName: "student_documents_studentid_fkey"
             columns: ["studentid"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_log: {
+        Row: {
+          action: string
+          changedat: string
+          changedby: string | null
+          id: string
+          newdata: Json | null
+          olddata: Json | null
+          recordid: string
+          tablename: string
+        }
+        Insert: {
+          action: string
+          changedat?: string
+          changedby?: string | null
+          id?: string
+          newdata?: Json | null
+          olddata?: Json | null
+          recordid: string
+          tablename: string
+        }
+        Update: {
+          action?: string
+          changedat?: string
+          changedby?: string | null
+          id?: string
+          newdata?: Json | null
+          olddata?: Json | null
+          recordid?: string
+          tablename?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_changedby_fkey"
+            columns: ["changedby"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

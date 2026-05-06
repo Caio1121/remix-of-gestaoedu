@@ -62,16 +62,23 @@ export const useLoginFlow = () => {
 
         // 3. 2FA obrigatório para gestores e docentes
         if (profile.role === "gestor" || profile.role === "docente") {
-          const { data: factors } = await supabase.auth.mfa.listFactors();
-          const hasVerified = factors?.totp?.some(f => f.status === "verified");
-          const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+          const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
+          if (factorsError) {
+            console.error("Erro ao listar fatores MFA:", factorsError);
+          }
+          
+          const hasVerifiedFactor = factorsData?.all?.some(f => f.status === "verified");
+          const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
-          if (!hasVerified) {
+          if (!hasVerifiedFactor) {
             navigate("/mfa-setup");
+            setLoading(false);
             return;
           }
-          if (aal?.currentLevel !== "aal2") {
+          
+          if (aalData?.currentLevel !== "aal2") {
             navigate("/mfa-challenge");
+            setLoading(false);
             return;
           }
         }
