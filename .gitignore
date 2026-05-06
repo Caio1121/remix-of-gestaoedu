@@ -36,3 +36,4 @@ supabase/migrations/.empty
 
 # Project Specific
 SYSTEM_PROMPT.md
+System prompt
